@@ -1,0 +1,32 @@
+# Large binary game assets: new files are tracked by Git LFS.
+*.png filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.webp filter=lfs diff=lfs merge=lfs -text
+*.psd filter=lfs diff=lfs merge=lfs -text
+*.ase filter=lfs diff=lfs merge=lfs -text
+*.aseprite filter=lfs diff=lfs merge=lfs -text
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.ogg filter=lfs diff=lfs merge=lfs -text
+*.flac filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.webm filter=lfs diff=lfs merge=lfs -text
+*.fbx filter=lfs diff=lfs merge=lfs -text
+*.glb filter=lfs diff=lfs merge=lfs -text
+# Existing P04 ordinary blobs are intentionally exempt until a verified LFS migration.
+# No history rewrite; remove an individual exemption only after its LFS object is uploaded.
+/assets/characters/atlas.png -filter -diff -merge -text
+/assets/characters/concept-lineup.png -filter -diff -merge -text
+/assets/environment/tidecross_background.png -filter -diff -merge -text
+/assets/items/chest_closed.png -filter -diff -merge -text
+/assets/items/chest_open.png -filter -diff -merge -text
+/docs/art-sources/chest-pair-original-with-haze.png -filter -diff -merge -text
+/docs/art-sources/chest-pair.png -filter -diff -merge -text
+/docs/art-sources/concept-seven.png -filter -diff -merge -text
+/docs/art-sources/crew-poses.png -filter -diff -merge -text
+/docs/art-sources/enemy-damage.png -filter -diff -merge -text
+/docs/art-sources/enemy-walk-original-with-guide.png -filter -diff -merge -text
+/docs/art-sources/enemy-walk.png -filter -diff -merge -text
+/docs/character-motion-preview.gif -filter -diff -merge -text
