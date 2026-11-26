@@ -1,6 +1,8 @@
 extends Node2D
 
 const Run = preload("res://src/Run.gd")
+const GameAudio = preload("res://src/GameAudio.gd")
+const Atmosphere = preload("res://src/BattleAtmosphere.gd")
 const ORIGIN = Vector2(52, 60)
 const TILE = 76.0
 const BOARD = Rect2(ORIGIN, Vector2(12,8)*TILE)
@@ -26,10 +28,17 @@ const FOE_LABELS = {"normal":"Hermit", "runner":"Sailbeast", "guard":"Shellguard
 const PHASES = {"build":"PLAN", "fight":"DEFEND", "won":"VICTORY", "lost":"DEFEAT"}
 
 var game = Run.new()
+var audio=GameAudio.new()
+var atmosphere=Atmosphere.new()
+var audio_paused_seen:bool=false
+var sound_button:Button
+var notice_seen:String=""
+var notice_age:float=0.0
 var accumulator = 0.0
 var selected_id:int = -1
 var selected_core:String = ""
 var merge_mode = false
+var merge_hover_id:int=-1
 var speed = 1.0
 var paused = false
 var seed_value = 437
@@ -168,6 +177,9 @@ func note_attacks()->void:
 		for shot in game.shots:
 			if int(shot.get("tower_id",-1))==t.id and Vector2(t.cell).is_equal_approx(shot.from):
 				last_directions[t.id]=shot.to.x<shot.from.x
+				audio.play_event(["hit_pulse","hit_frost","hit_burst"][t.kind],Vector2(shot.to),t.id)
+				var synergy:String=shot.get("synergy","")
+				if not synergy.is_empty():audio.play_event(synergy,Vector2(shot.to),t.id)
 				break
 
 
@@ -175,6 +187,7 @@ func _ready() -> void:
 	font = ThemeDB.fallback_font
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
 	load_sprites()
+	add_child(audio)
 	var layer = CanvasLayer.new()
 	add_child(layer)
 	var ui = Control.new()
@@ -186,7 +199,10 @@ func _ready() -> void:
 	label_seed=make_label(ui,"",Rect2(21,32,188,15),10,MUTED)
 	label_status=make_label(ui,"",Rect2(225,12,192,32),19,INK)
 	label_rule=make_label(ui,"",Rect2(445,8,284,34),21,INK)
-	label_phase=make_label(ui,"",Rect2(751,10,250,34),16,INK)
+	label_phase=make_label(ui,"",Rect2(751,10,178,34),15,INK)
+	sound_button=make_button(ui,"SOUND ON",Rect2(930,9,78,32),MUTED,11)
+	sound_button.tooltip_text="Toggle all game audio. Audio starts after the first input gesture."
+	sound_button.pressed.connect(_toggle_sound)
 	# Two compact planning ribbons stay off the map's actionable cells.
 	label_forecast=make_label(ui,"",Rect2(1031,265,231,72),12,MUTED)
 	label_message=make_label(ui,"",Rect2(16,676,656,20),12,INK)
@@ -222,13 +238,19 @@ func _ready() -> void:
 	for i in range(9):
 		var b=make_button(ui,"",Rect2(13+i*74,721,69,70),ACC,11)
 		b.pressed.connect(_reserve_clicked.bind(i))
+		b.mouse_entered.connect(func():
+			merge_hover_id=int(game.reserve[i].id) if merge_mode and i<game.reserve.size() else -1
+			update_hover())
+		b.mouse_exited.connect(func():
+			merge_hover_id=-1
+			update_hover())
 		b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER
 		b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP
 		b.expand_icon=true
 		b.add_theme_constant_override("icon_max_width",51)
 		reserve_buttons.append(b)
 	special_button=make_button(ui,"",Rect2(680,714,152,30),WARN,12)
-	special_button.pressed.connect(func():_skip_reveal();sell_confirm="";restart_confirm="";_cancel_pointer();game.alter())
+	special_button.pressed.connect(_alter_route)
 	pause_button=make_button(ui,"PAUSE",Rect2(838,714,96,30),ACC,12)
 	pause_button.pressed.connect(_toggle_pause)
 	speed_button=make_button(ui,"1x",Rect2(940,714,63,30),ACC,12)
@@ -241,6 +263,7 @@ func _ready() -> void:
 	new_seed_button.pressed.connect(_restart.bind(true))
 	game.changed.connect(refresh)
 	game.reset(seed_value)
+	atmosphere.reset(game)
 
 func make_label(parent:Node, value:String, area:Rect2, sz:int, c:Color=INK) -> Label:
 	var l = Label.new()
@@ -294,9 +317,11 @@ func make_button(parent:Node,value:String,area:Rect2,color:Color=ACC,sz:int=14)-
 	configure_button(b,color,color==PRIMARY)
 	parent.add_child(b)
 	b.size=area.size
+	b.pressed.connect(func():audio.play_event("ui_press"))
 	return b
 
 func _skip_reveal()->void:
+	audio.skip_loot()
 	loot_age=LOOT_DURATION
 	skip_reveal_button.visible=false
 	queue_redraw()
@@ -314,9 +339,11 @@ func _explore()->void:
 	var result:Dictionary=game.draw_loot()
 	if result.is_empty() or not result.get("ok",true):
 		notice=game.message
+		audio.play_event("ui_reject")
 	else:
 		loot_reveal=result.duplicate(true)
 		loot_age=0.0
+		audio.start_loot(loot_reveal)
 		if result.get("kind","")=="tower":
 			selected_id=int(result.get("id",-1))
 			selected_core=""
@@ -353,7 +380,10 @@ func _sell_selected_core()->void:
 		notice="Confirm selling one relic rank for 4 coins."
 	else:
 		sell_confirm=""
-		if not game.sell_core(selected_core): notice="Select a held relic rank to sell."
+		if game.sell_core(selected_core):audio.play_event("sell")
+		else:
+			notice="Select a held relic rank to sell."
+			audio.play_event("ui_reject")
 	refresh()
 
 func get_tower(id:int)->Dictionary:
@@ -390,13 +420,17 @@ func _select_tower(id:int)->void:
 	if merge_mode:
 		if id==selected_id:
 			notice="Select a different matching tower."
+			audio.play_event("ui_reject")
 		elif not can_merge(get_tower(selected_id),get_tower(id)):
 			notice="Merge needs same type and rank below rank 3."
+			audio.play_event("ui_reject")
 		elif game.merge_towers(selected_id,id):
 			merge_mode=false
 			notice=""
+			audio.play_event("merge")
 		else:
 			notice="Merge was not available."
+			audio.play_event("ui_reject")
 	else:
 		selected_id=id
 		selected_core=""
@@ -418,6 +452,7 @@ func _toggle_merge()->void:
 	_skip_reveal()
 	if merge_mode:
 		merge_mode=false
+		merge_hover_id=-1
 	else:
 		merge_mode=has_merge_partner(get_tower(selected_id)) and game.phase=="build"
 	notice=""
@@ -432,7 +467,10 @@ func _recall()->void:
 	sell_confirm=""
 	_skip_reveal()
 	notice=""
-	if not game.recall(selected_id):notice="Select a deployed tower to recall."
+	if game.recall(selected_id):audio.play_event("recall")
+	else:
+		notice="Select a deployed tower to recall."
+		audio.play_event("ui_reject")
 	refresh()
 
 func _sell_selected_tower()->void:
@@ -453,10 +491,12 @@ func _sell_selected_tower()->void:
 		return
 	sell_confirm=""
 	if game.sell_tower(selected_id):
+		audio.play_event("sell")
 		selected_id=-1
 		merge_mode=false
 	else:
 		notice=game.message if game.phase=="build" and not get_tower(selected_id).is_empty() else "Select a tower to sell during planning."
+		audio.play_event("ui_reject")
 	refresh()
 
 func _start()->void:
@@ -467,7 +507,14 @@ func _start()->void:
 	notice=""
 	merge_mode=false
 	paused=false
-	if not game.start():notice="Deploy at least one tower before starting."
+	if game.start():
+		atmosphere.observe(game)
+		audio.set_battle_active(true)
+		audio.play_event("wave_start",Vector2(game.path()[0]))
+		if game.stage==1 and game.opened:audio.play_event("wave_start",Vector2(game.path(false)[0]))
+	else:
+		notice="Deploy at least one crew member before starting."
+		audio.play_event("ui_reject")
 	refresh()
 
 func _toggle_pause()->void:
@@ -511,11 +558,15 @@ func _restart(random_seed:bool)->void:
 	selected_id=-1
 	selected_core=""
 	merge_mode=false
+	merge_hover_id=-1
 	last_attacks.clear()
 	last_directions.clear()
 	death_fx.clear()
 	idle_clock=0.0
+	audio.reset_scene()
 	game.reset(seed_value)
+	atmosphere.reset(game)
+	audio_paused_seen=false
 
 func update_status()->void:
 	label_status.text="♥ %02d    　 %02d" % [maxi(game.hp,0),game.gold]
@@ -542,12 +593,13 @@ func refresh()->void:
 		last_attacks.clear()
 	if game.phase!="build":
 		merge_mode=false
+		merge_hover_id=-1
 		sell_confirm=""
 	var t=get_tower(selected_id)
-	if t.is_empty():selected_id=-1;merge_mode=false
+	if t.is_empty():selected_id=-1;merge_mode=false;merge_hover_id=-1
 	var planning:bool=game.phase=="build"
 	update_status()
-	label_seed.text="P06 · Seed %d"%seed_value
+	label_seed.text="P07 · Seed %d"%seed_value
 	label_rule.text=Run.NAMES[game.stage].to_upper()
 	label_rule.tooltip_text=["Switch the tidal crossing.","Open second inlet: +6 if leak-free.","Echo reefs amplify your crew."][game.stage]
 	if game.stage==2 and game.wave==1:label_rule.tooltip_text="Boss escape = immediate defeat."
@@ -562,10 +614,13 @@ func refresh()->void:
 
 	skip_reveal_button.visible=loot_age<LOOT_DURATION
 	loot_label.text=("%s R%d"%[loot_reveal.get("name","Reward"),int(loot_reveal.get("rank",1))]) if not loot_reveal.is_empty() else "One random result per chest."
-	loot_label.text+="\n%d%% crew  ·  %d%% relic"%[roundi(crew_pct),roundi(core_pct)]
+	loot_label.text+=("\n%d%% crew  ·  %d%% relic"%[roundi(crew_pct),roundi(core_pct)]) if planning else "\nExplore between waves."
 	if planning and game.towers.size()+game.reserve.size()<2 and loot_age>=LOOT_DURATION:
 		loot_label.tooltip_text="First two crew guaranteed. Relic applies immediately."
-	merge_button.text="CANCEL" if merge_mode else "MERGE"
+	else:loot_label.tooltip_text="Reward odds are conditional on eligible inventory."
+	merge_button.text="CANCEL" if merge_mode else "MERGE +1"
+	merge_button.tooltip_text="Select another same-type same-rank crew member. Two become one at the next rank." if merge_mode else ("One matching crew is required; merge gives one next-rank unit." if has_merge_partner(t) else "Select a R1/R2 crew with another of the same type and rank.")
+	if not merge_mode and not t.is_empty() and has_merge_partner(t):merge_button.text="MERGE +1"
 	merge_button.disabled=not planning or (not merge_mode and not has_merge_partner(t))
 	recall_button.disabled=not planning or not is_deployed(t)
 	sell_tower_button.text=("%s +%d"%["CONFIRM" if sell_confirm=="tower:%d:%d"%[t.id,t.rank] else "SELL",game.tower_sale_value(t.rank)]) if not t.is_empty() else "SELL"
@@ -576,13 +631,18 @@ func refresh()->void:
 	special_button.visible=game.stage<2
 	special_button.disabled=not planning
 	if game.stage==0:
-		special_button.text="ROUTE %s · %d"%["UPPER" if game.route_choice==0 else "LOWER",int(game.route_lengths()[game.route_choice])]
+		special_button.text="SWITCH → %s"%("LOWER" if game.route_choice==0 else "UPPER")
+		special_button.tooltip_text="Current route: %s (%d cells); switch to compare coverage."%["UPPER" if game.route_choice==0 else "LOWER",int(game.route_lengths()[game.route_choice])]
 	elif game.stage==1:
-		special_button.text="RIFT "+("OPEN (+6)" if game.opened else "CLOSED")
+		special_button.text="CLOSE RIFT" if game.opened else "OPEN RIFT +6"
+		special_button.tooltip_text="Optional second lane and stronger enemies; clear without leaks for +6 coins."
 	start_button.disabled=not planning or game.towers.is_empty()
 	start_button.tooltip_text="Deploy at least one crew member first." if planning and game.towers.is_empty() else "Begin the next wave."
-	configure_button(explore_button,PRIMARY if start_button.disabled else MUTED, start_button.disabled)
-	configure_button(start_button,PRIMARY if not start_button.disabled else MUTED, not start_button.disabled)
+	start_button.text="DEPLOY CREW FIRST" if planning and game.towers.is_empty() else ("START WAVE" if planning else ("IN BATTLE" if game.phase=="fight" else "RUN COMPLETE"))
+	var explore_primary=planning and not explore_button.disabled and game.reserve.is_empty() and (game.towers.is_empty() or game.gold>=6)
+	var start_primary=planning and not start_button.disabled and game.reserve.is_empty() and not explore_primary
+	configure_button(explore_button,PRIMARY if explore_primary else MUTED,explore_primary)
+	configure_button(start_button,PRIMARY if start_primary else MUTED,start_primary)
 	pause_button.disabled=game.phase!="fight"
 	pause_button.text="RESUME" if paused else "PAUSE"
 	speed_button.text="SPEED %dx"%int(speed)
@@ -593,19 +653,34 @@ func refresh()->void:
 	new_seed_button.disabled=restart_cooldown>0.0
 	if not restart_confirm.is_empty():
 		label_message.text=("New run" if restart_confirm=="new" else "Retry seed")+" will discard progress. Confirm or Esc to cancel."
+	elif not sell_confirm.is_empty():
+		label_message.text="Confirm the displayed sale, or Cancel / Esc. No change until confirmed."
 	elif game.phase=="won" or game.phase=="lost":
 		label_message.text=game.message+"  •  Leaks: %d"%game.run_leaks
-	elif planning and game.message=="Build a defense, then start the wave.":
-		label_message.text="Explore for a random reward, then deploy crew on a free tile."
+	elif planning:
+		if merge_mode:
+			label_message.text="③ Merge: select another highlighted match. Cancel / Esc to leave."
+		else:
+			var guide=""
+			if game.towers.is_empty() and game.reserve.is_empty():guide="① Explore for 6 coins."
+			elif not t.is_empty() and not is_deployed(t):guide="② Click a highlighted tile. Hover for coverage."
+			elif game.towers.is_empty():guide="② Select a crew portrait, then click a legal tile."
+			elif game.reserve.size()>0:guide="③ Deploy reserve crew, merge matches, or start."
+			else:guide="③ Compare route coverage, then start."
+			var receipt=game.message if game.message!="Build a defense, then start the wave." else ""
+			label_message.text=(receipt+" · "+guide) if not receipt.is_empty() and (receipt.length()+guide.length())<96 else guide
+	sound_button.text="SOUND OFF" if audio.is_muted() else "SOUND ON"
+	sound_button.tooltip_text="Click to enable game sound." if audio.is_muted() else "Click to mute all game sound."
 	label_reserve.text="FIELD %d/5 · %d/9"%[game.towers.size(),game.towers.size()+game.reserve.size()]
 	for i in range(9):
 		var b=reserve_buttons[i]
 		b.disabled=i>=game.reserve.size() or not planning
 		if i>=game.reserve.size():
-			b.text="+";b.icon=null;b.modulate=Color.WHITE
+			b.text="—";b.icon=null;b.modulate=Color.WHITE
 		else:
 			var r:Dictionary=game.reserve[i]
 			b.text="%s%s R%d"%[">" if r.id==selected_id else "",["Brass","Mist","Reef"][r.kind],r.rank]
+			b.tooltip_text="%s, rank %d. Click to select then click a legal tile."%[Run.TYPES[r.kind],r.rank]
 			b.icon=crew_icons[r.kind] if crew_icons.size()>r.kind else null
 			b.modulate=Color.WHITE
 			configure_button(b,ACC if r.id==selected_id or (merge_mode and can_merge(t,r)) else MUTED)
@@ -623,15 +698,29 @@ func refresh()->void:
 			label_core.text="%s  R%d\n%s"%[u.name,game.level(u.id),u.description]
 	sell_core_button.text="CONFIRM +4" if sell_confirm=="core:%s:%d"%[selected_core,game.level(selected_core)] else "SELL RELIC +4"
 	sell_core_button.disabled=not planning or selected_core.is_empty() or game.level(selected_core)<=0
+	if notice!=notice_seen:
+		notice_seen=notice
+		notice_age=0.0
 	update_hover()
 	queue_redraw()
 
 func _process(delta:float)->void:
+	var freeze_audio=game.phase=="fight" and (paused or not restart_confirm.is_empty())
+	if freeze_audio!=audio_paused_seen:
+		audio.set_battle_paused(freeze_audio)
+		audio_paused_seen=freeze_audio
+	if not notice.is_empty() and sell_confirm.is_empty() and restart_confirm.is_empty():
+		notice_age+=delta
+		if notice_age>2.2:
+			notice=""
+			notice_seen=""
+			update_hover()
 	if restart_cooldown>0.0:
 		restart_cooldown=maxf(0.0,restart_cooldown-delta)
 		if restart_cooldown<=0.0:refresh()
 	if loot_age<LOOT_DURATION:
 		loot_age=minf(LOOT_DURATION,loot_age+delta)
+		audio.advance_loot(loot_age)
 		skip_reveal_button.visible=loot_age<LOOT_DURATION
 		if loot_age>=LOOT_DURATION:refresh()
 	if not paused:
@@ -643,15 +732,26 @@ func _process(delta:float)->void:
 		accumulator+=minf(delta,0.25)*speed
 		while accumulator>=Run.TICK and game.phase=="fight":
 			var stage_before:int=game.stage
+			var leaks_before:int=game.run_leaks
 			game.step()
+			var edges:Dictionary=atmosphere.observe(game)
 			note_attacks()
+			audio.set_danger(atmosphere.danger_active,Vector2(edges.get("danger_pos",Vector2(11,4))))
+			if game.run_leaks>leaks_before and game.phase=="fight":audio.play_event("leak",Vector2(11,4))
 			if stage_before!=game.stage:death_fx.clear()
-			else:
-				for d in game.get("deaths"):
-					if int(d.tick)==game.tick_count:
+			for d in game.get("deaths"):
+				if int(d.tick)==game.tick_count:
+					audio.play_event("kill",Vector2(d.pos),int(d.id))
+					if stage_before==game.stage:
 						var visual:Dictionary=d.duplicate(true)
 						visual.age=0.0
 						death_fx.append(visual)
+			if game.phase!="fight":
+				death_fx.clear()
+				audio.set_battle_active(false)
+				audio.set_danger(false)
+				if game.run_leaks>leaks_before:audio.play_event("leak",Vector2(11,4))
+				audio.play_event("wave_clear" if game.phase=="build" else ("victory" if game.phase=="won" else "defeat"))
 			accumulator-=Run.TICK
 		update_status()
 	elif game.phase!="fight" or paused:
@@ -660,7 +760,6 @@ func _process(delta:float)->void:
 	var next_hover=Vector2i(floor((cursor.x-ORIGIN.x)/TILE),floor((cursor.y-ORIGIN.y)/TILE))
 	if next_hover!=hover:
 		hover=next_hover
-		notice=""
 		update_hover()
 	queue_redraw()
 
@@ -679,6 +778,34 @@ func candidate_error(cell:Vector2i,t:Dictionary)->String:
 	if t.is_empty():return "Draw or select a tower first."
 	return game.placement_error(cell,t.kind,t.id)
 
+func coverage_summary(lanes:Array,preview:bool=false)->String:
+	var parts:Array[String]=[]
+	for lane in lanes:
+		var length=maxf(0.0001,float(lane.get("length",0.0)))
+		var name="Main" if lane.get("id","")=="main" else "Rift"
+		if preview:
+			var before=roundi(float(lane.get("team_before",0.0))/length*100.0)
+			var after=roundi(float(lane.get("team_after",0.0))/length*100.0)
+			parts.append("%s %d→%d%% (%+dpt)"%[name,before,after,after-before])
+		else:
+			parts.append("%s %d%%"%[name,roundi(float(lane.get("covered",0.0))/length*100.0)])
+	return " / ".join(parts)
+
+func _toggle_sound()->void:
+	audio.set_muted(not audio.is_muted())
+	refresh()
+
+func _alter_route()->void:
+	_skip_reveal()
+	sell_confirm=""
+	restart_confirm=""
+	_cancel_pointer()
+	notice=""
+	if game.phase=="build":
+		game.alter()
+		notice=("Route now "+("UPPER" if game.route_choice==0 else "LOWER")) if game.stage==0 else ("Rift now OPEN: +6 on clean clear." if game.opened else "Rift now CLOSED.")
+		refresh()
+
 func update_hover()->void:
 	var t=get_tower(selected_id)
 	var viewed=t
@@ -695,24 +822,33 @@ func update_hover()->void:
 	label_feedback.add_theme_color_override("font_color",MUTED)
 	if not notice.is_empty():
 		label_feedback.text=notice
-		label_feedback.add_theme_color_override("font_color",WARN)
+		label_feedback.add_theme_color_override("font_color",ACC if notice.begins_with("Route now") or notice.begins_with("Rift now") or notice.begins_with("Cancelled") else WARN)
 	elif merge_mode:
 		var old_stats:Array=game.stats(t)
 		var merged_stats:Array=game.preview_stats(t.cell,t.kind,t.rank+1,t.id)
-		label_feedback.text="MERGE: %s R%d + R%d → R%d  •  %.1f → %.1f dmg"%[SHORT_NAMES[t.kind],t.rank,t.rank,t.rank+1,old_stats[0],merged_stats[0]]
+		label_feedback.text="Merge %s R%d + R%d → R%d  •  ATK %.1f → %.1f"%[SHORT_NAMES[t.kind],t.rank,t.rank,t.rank+1,old_stats[0],merged_stats[0]]
+		var other=get_tower(merge_hover_id) if merge_hover_id>=0 else (tower_at(hover) if inside(hover) else {})
+		if can_merge(t,other):
+			var cov:Dictionary=game.coverage_merge_preview(t.id,other.id)
+			if cov.get("valid",false):label_feedback.text="Merge R%d+R%d→R%d · Route %s"%[t.rank,t.rank,t.rank+1,coverage_summary(cov.get("lanes",[]),true)]
 		label_feedback.add_theme_color_override("font_color",ACC)
 	elif not inside(hover):
-		label_feedback.text="Select a crew member to deploy or move  •  Solid path active  •  Purple amplifier"
+		if game.phase=="build":
+			var current=coverage_summary(game.coverage_current())
+			label_feedback.text="Route coverage: "+current+"  ·  Select crew, then hover a map point."
+		else:label_feedback.text="Battle active · Pause or change speed."
 	elif not tower_at(hover).is_empty():
 		var other=tower_at(hover)
 		label_feedback.text="Click %s R%d at %s to select  •  Right-click to recall"%[SHORT_NAMES[other.kind],other.rank,cell_name(hover)]
 	elif game.phase=="build":
 		var reason=candidate_error(hover,t)
 		if reason.is_empty():
-			label_feedback.text="%s %s R%d at %s  •  FREE"%["Move" if is_deployed(t) else "Deploy",SHORT_NAMES[t.kind],t.rank,cell_name(hover)]
+			var cov:Dictionary=game.coverage_preview(hover,t.kind,t.rank,t.id)
+			var summary=coverage_summary(cov.get("lanes",[]),true) if cov.get("valid",false) else ""
+			label_feedback.text="%s at %s · FREE · Route %s"%["Move" if is_deployed(t) else "Deploy",cell_name(hover),summary]
 			label_feedback.add_theme_color_override("font_color",ACC)
 		else:
-			label_feedback.text="%s: %s"%[cell_name(hover),reason]
+			label_feedback.text=("Select a crew portrait below first." if t.is_empty() else "%s: %s"%[cell_name(hover),reason])
 			label_feedback.add_theme_color_override("font_color",WARN)
 	else:
 		label_feedback.text="Battle active  •  draw, deploy and sell between waves."
@@ -735,6 +871,8 @@ func _notification(what:int)->void:
 func _input(event:InputEvent)->void:
 	# Observe pointer movement before GUI consumption: crossing into another cell or UI
 	# cancels the outstanding board gesture. Selection/deploy is still _unhandled_input only.
+	if (event is InputEventMouseButton or event is InputEventScreenTouch or event is InputEventKey) and event.pressed:
+		audio.unlock()
 	if pointer_button==0:return
 	if event is InputEventMouseMotion or (event is InputEventMouseButton and not event.pressed):
 		var cell=Vector2i(floor((event.position.x-ORIGIN.x)/TILE),floor((event.position.y-ORIGIN.y)/TILE))
@@ -773,8 +911,13 @@ func _unhandled_input(event:InputEvent)->void:
 		else:
 			var t=get_tower(selected_id)
 			var reason=candidate_error(cell,t)
-			if not reason.is_empty():notice=reason
-			elif not game.deploy(selected_id,cell):notice="Deployment unavailable."
+			if not reason.is_empty():
+				notice=reason
+				audio.play_event("ui_reject")
+			elif game.deploy(selected_id,cell):audio.play_event("deploy",Vector2(cell))
+			else:
+				notice="Deployment unavailable."
+				audio.play_event("ui_reject")
 	elif event.button_index==MOUSE_BUTTON_RIGHT:
 		if not target.is_empty():
 			selected_id=target.id
@@ -941,26 +1084,30 @@ func draw_loot_presentation()->void:
 	var p=CHEST+Vector2(shake,0)
 	draw_ellipse_shadow(p+Vector2(0,65),67)
 	if active and not chest_open:
-		draw_arc(p+Vector2(0,5),52,0,TAU*charge,48,Color(glow,0.75),3,true)
+		draw_arc(p+Vector2(0,5),54,0,TAU*charge,48,Color(glow,0.75),3,true)
 		draw_circle(p+Vector2(0,5),42,Color(glow,0.12*charge))
 	var tex:Texture2D=chest_textures[int(chest_open)] if chest_textures.size()==2 else null
 	if tex!=null:
 		draw_texture_rect(tex,Rect2(p-Vector2(80,80),Vector2(160,160)),false)
-	else:
-		draw_chest_fallback(p,chest_open)
+	else:draw_chest_fallback(p,chest_open)
 	if not chest_open:return
 	var elapsed=loot_age-0.32
-	var burst=clampf(1.0-elapsed/0.55,0,1)
-	var center=p+Vector2(-22,10)
-	# A bounded radial splash, no full-screen flash or shake. Deterministic visual phase.
+	var burst=clampf(1.0-elapsed/0.52,0,1)
+	var center=p+Vector2(-31,8)
+	# Spotlight remains inside the chest display well; no whole-screen flash or button masking.
+	var beam=PackedVector2Array([center+Vector2(-15,42),Vector2(1038,12),Vector2(1179,12),center+Vector2(15,42)])
+	draw_polygon(beam,PackedColorArray([Color(glow,0.35*burst),Color(glow,0.05*burst),Color(glow,0.05*burst),Color(glow,0.35*burst)]))
 	if burst>0:
-		draw_circle(center,30+38*(1-burst),Color(glow,0.28*burst))
-		draw_arc(center,18+50*(1-burst),0,TAU,48,Color(glow,0.75*burst),2.0+float(tier),true)
-		for i in range(9+tier*5):
-			var angle=TAU*float(i)/float(9+tier*5)+0.17
-			var d=Vector2.from_angle(angle)
-			var spark=center+d*(12+48*(1-burst))
-			draw_line(spark,spark+d*(5+5*burst),Color(glow,burst),2,true)
+		draw_circle(center,28+44*(1-burst),Color(glow,0.18*burst))
+		draw_arc(center,18+48*(1-burst),0,TAU,48,Color(glow,0.78*burst),2.0+float(tier),true)
+		for i in range(18+tier*6):
+			var angle=TAU*float(i)/float(18+tier*6)+0.17
+			var dir=Vector2.from_angle(angle)
+			var spark=center+dir*(18+49*(1-burst))
+			if not Rect2(1031,11,229,125).has_point(spark):continue
+			var long=4.0+5.0*burst+float(i%3)
+			var cross=dir.orthogonal()*2.0
+			draw_colored_polygon(PackedVector2Array([spark-dir*long/2,spark+cross,spark+dir*long/2,spark-cross]),Color(glow,0.90*burst))
 	var progress=clampf((loot_age-0.87)/0.48,0,1)
 	var target=Vector2(640,750)
 	var icon:Texture2D=null
@@ -975,17 +1122,27 @@ func draw_loot_presentation()->void:
 		var kind=int(loot_reveal.tower_kind)
 		if kind<crew_icons.size():icon=crew_icons[kind]
 	var rise=clampf(elapsed/0.22,0,1)
-	var from=center+Vector2(-42,-36*sin(rise*PI/2))
-	var point=from.lerp(target,progress*progress*(3-2*progress))
-	var size=lerpf(58.0+float(tier)*8.0,28.0,progress)*lerpf(0.65,1.0,rise)
-	var radius=size*0.58
+	var from=Vector2(1084,96-23*sin(rise*PI/2))
+	var eased=progress*progress*(3-2*progress)
+	var point=from.lerp(target,eased)+Vector2(-85,-26)*sin(progress*PI)
+	var size=lerpf(96.0+float(tier)*5.0,29.0,progress)*lerpf(0.60,1.0,rise)
+	var radius=size*0.54
+	draw_circle(point+Vector2(1,3),radius+3,Color(0.18,0.29,0.30,0.22))
 	draw_circle(point,radius,Color("fff6e4"))
-	draw_arc(point,radius,0,TAU,48,glow,2.5+float(tier),true)
-	if icon!=null:
-		draw_texture_rect(icon,Rect2(point-Vector2.ONE*size/2.0,Vector2.ONE*size),false)
-	if tier>=1 and progress==0.0:
-		var label="RELIC UPGRADED" if tier==2 else "RELIC FOUND"
-		draw_string(font,Vector2(1030,153),label,HORIZONTAL_ALIGNMENT_CENTER,166,12,Color("62456c") if tier==1 else RESOURCE)
+	draw_arc(point,radius,0,TAU,64,glow,3.0+float(tier),true)
+	draw_arc(point,radius-3,0,TAU,64,Color(glow,0.35),1.3,true)
+	if icon!=null:draw_texture_rect(icon,Rect2(point-Vector2.ONE*size/2,Vector2.ONE*size),false)
+	if progress<=0.0:
+		var badge=point+Vector2(radius*0.72,-radius*0.72)
+		draw_circle(badge,13,PANEL_DARK)
+		draw_arc(badge,13,0,TAU,32,glow,2,true)
+		draw_string(font,badge+Vector2(-12,4),"R%d"%int(loot_reveal.get("rank",1)),HORIZONTAL_ALIGNMENT_CENTER,24,13,INK)
+		# Dedicated readable receipt pill below the icon, separate from chest art and Skip button.
+		var label="CREW RECRUITED" if tier==0 else ("RELIC FOUND" if tier==1 else "RELIC UPGRADED")
+		var receipt=Rect2(1032,139,158,25)
+		draw_paper(receipt,6)
+		draw_rect(receipt.grow(-1),Color(glow,0.45),false,1)
+		draw_string(font,Vector2(1035,156),label,HORIZONTAL_ALIGNMENT_CENTER,152,12,INK)
 
 func draw_chest_fallback(p:Vector2,chest_open:bool)->void:
 	draw_rect(Rect2(p+Vector2(-42,-3),Vector2(84,35)),Color("96614a"))
@@ -1077,13 +1234,15 @@ func _draw()->void:
 		draw_bridge(Vector2(8,4),Vector2(10.7,4))
 	if game.stage==1: draw_entry(game.path(false)[0],"RIFT B",game.opened)
 	draw_entry(game.path()[0],"RIFT A",true)
+	atmosphere.draw_ground(self,game,ORIGIN,TILE,idle_clock)
 	if game.stage==2:
 		for cell in Run.AMP_CELLS:
 			var p=coord(Vector2(cell))
-			draw_rect(Rect2(p-Vector2.ONE*24,Vector2.ONE*48),Color("39344d"))
-			draw_arc(p,19,0,TAU,32,AMP,2,true)
-			draw_colored_polygon(PackedVector2Array([p+Vector2(0,-17),p+Vector2(12,0),p+Vector2(0,17),p+Vector2(-12,0)]),AMP)
-			draw_string(font,p+Vector2(-16,4),"AMP",HORIZONTAL_ALIGNMENT_LEFT,-1,11,BG)
+			var amp_active=false
+			for t in game.towers:
+				if Vector2(t.cell).distance_to(Vector2(cell))<=1.5:amp_active=true
+			atmosphere.draw_amplifier(self,p,amp_active)
+			draw_string(font,p+Vector2(-16,23),"AMP",HORIZONTAL_ALIGNMENT_LEFT,-1,11,INK)
 	var core=coord(Vector2(11,4))
 	var lighthouse:Texture2D=environment_icons.get("lighthouse")
 	if lighthouse!=null:draw_texture_rect(lighthouse,Rect2(core+Vector2(-30,-112),Vector2(59,114)),false)
@@ -1124,6 +1283,7 @@ func _draw()->void:
 		draw_tower(p,t.kind,false,t.id)
 		if t.id==selected_id or (merge_mode and can_merge(get_tower(selected_id),t)):
 			draw_arc(p+Vector2(0,13),32,0,TAU,40,ACC,2,true)
+		atmosphere.draw_rank(self,p,t.rank)
 		draw_circle(p+Vector2(21,26),10,PANEL_DARK)
 		draw_string(font,p+Vector2(9,30),str(t.rank),HORIZONTAL_ALIGNMENT_CENTER,24,12,INK)
 	for e in game.enemies:
@@ -1138,9 +1298,14 @@ func _draw()->void:
 		var hurt=hit_age>=0 and hit_age<0.16
 		if not draw_character(sprite_id,"hurt" if hurt else "run",anchor,character_scale(sprite_id),hit_age if hurt else game.tick_count*Run.TICK,dir.x<0):
 			draw_circle(p,r,c)
-		if e.slow>0:draw_arc(anchor,12,0,TAU,24,c,1.5,true)
+		
 		if e.boss: draw_arc(p,r+4,0,TAU,36,WARN,3,true)
-		# Health is drawn after all enemy sprites so a trailing crab cannot hide a bar.
+		# Unit health is the top gameplay-readable layer.
+	for d in death_fx:
+		var p=coord(d.pos)+d.direction.orthogonal()*float((int(d.id)%3)-1)*5.0+Vector2(0,13)
+		var sprite_id:String=ENEMY_SPRITES.get(d.role,"crab")
+		draw_character(sprite_id,"death",p,character_scale(sprite_id),d.age,d.direction.x<0)
+	atmosphere.draw_combat(self,game,ORIGIN,TILE)
 	for e in game.enemies:
 		var dir:Vector2=e.get("direction",Vector2.RIGHT)
 		var p=coord(e.pos)+dir.orthogonal()*float((int(e.id)%3)-1)*5.0
@@ -1149,19 +1314,7 @@ func _draw()->void:
 		draw_rect(Rect2(pos-Vector2.ONE,size+Vector2.ONE*2),Color("213d48"))
 		draw_rect(Rect2(pos,size),Color("768287"))
 		draw_rect(Rect2(pos,Vector2(size.x*clampf(e.hp/e.maxhp,0,1),size.y)),Color("d15e43"))
-	for d in death_fx:
-		var p=coord(d.pos)+d.direction.orthogonal()*float((int(d.id)%3)-1)*5.0+Vector2(0,13)
-		var sprite_id:String=ENEMY_SPRITES.get(d.role,"crab")
-		draw_character(sprite_id,"death",p,character_scale(sprite_id),d.age,d.direction.x<0)
-	if game.phase=="fight":
-		for s in game.shots:
-			draw_line(coord(s.from),coord(s.to),Color(COLORS[s.kind],0.7),3,true)
-			draw_circle(coord(s.to),5,COLORS[s.kind])
-			var synergy:String=s.get("synergy","")
-			if not synergy.is_empty():
-				var color=Color("a2e9f0") if synergy=="conductive" else Color("ffd18f")
-				draw_arc(coord(s.to),17,0,TAU,24,color,2,true)
-				draw_string(font,coord(s.to)+Vector2(-31,-12),synergy.to_upper(),HORIZONTAL_ALIGNMENT_CENTER,62,10,INK)
+	atmosphere.draw_alert(self,game,ORIGIN,TILE,font)
 	if game.phase=="build" and inside(hover) and not merge_mode and tower_at(hover).is_empty():
 		var t=get_tower(selected_id)
 		if not t.is_empty():

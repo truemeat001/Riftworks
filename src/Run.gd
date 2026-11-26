@@ -283,6 +283,9 @@ func start() -> bool:
 func level(id:String) -> int: return upgrades.get(id,0)
 
 func preview_stats(cell:Vector2i, kind:int, rank:int=1, ignore_id:int=-1)->Array:
+	return _stats_for_layout(cell,kind,rank,ignore_id,towers)
+
+func _stats_for_layout(cell:Vector2i,kind:int,rank:int,ignore_id:int,layout:Array)->Array:
 	var damage:float=BASE_DAMAGE[kind]*RANK_DAMAGE[rank-1]*(1+0.35*level("power")+0.05*level("chain")+0.03*level("freeze")+0.05*level("blast"))
 	var radius:float=BASE_RANGE[kind]+level("range")+RANK_RANGE[rank-1]
 	var cd:float=BASE_COOLDOWN[kind]*pow(0.75,level("rapid"))
@@ -292,7 +295,7 @@ func preview_stats(cell:Vector2i, kind:int, rank:int=1, ignore_id:int=-1)->Array
 		for a in AMP_CELLS:
 			if Vector2(cell).distance_to(Vector2(a))<=1.5: amp=true
 	if level("relay")>0:
-		for other in towers:
+		for other in layout:
 			if other.id!=ignore_id and other.cell!=cell and Vector2(cell).distance_to(Vector2(other.cell))<=2.1:
 				relay=true
 				break
@@ -304,6 +307,111 @@ func preview_stats(cell:Vector2i, kind:int, rank:int=1, ignore_id:int=-1)->Array
 
 func stats(t:Dictionary) -> Array:
 	return preview_stats(t.cell,t.kind,t.rank,t.id)
+
+# Geometric path coverage only. This deliberately excludes damage, attack scheduling,
+# targeting, slow, speed, and splash: coverage never predicts the outcome of a battle.
+func _active_lanes()->Array:
+	var lanes=[{"id":"main","route":path()}]
+	if stage==1 and opened: lanes.append({"id":"extra","route":path(false)})
+	return lanes
+
+func _layout_circles(layout:Array)->Array:
+	var circles:Array=[]
+	for t in layout:
+		var st=_stats_for_layout(t.cell,t.kind,t.rank,t.id,layout)
+		circles.append({"center":Vector2(t.cell),"radius":float(st[1])})
+	return circles
+
+func _covered_segment(a:Vector2,b:Vector2,circles:Array)->float:
+	var segment=b-a
+	var length=segment.length()
+	if length<=0.000001:return 0.0
+	var direction=segment/length
+	var intervals:Array[Vector2]=[]
+	for circle in circles:
+		var offset:Vector2=circle.center-a
+		var along=offset.dot(direction)
+		var perpendicular=offset-direction*along
+		var inside:float=float(circle.radius)*float(circle.radius)-perpendicular.length_squared()
+		if inside<=0.0:continue # Tangency is covered at a point of zero path length.
+		var half=sqrt(inside)
+		var lo=maxf(0.0,along-half)
+		var hi=minf(length,along+half)
+		if hi>lo:intervals.append(Vector2(lo,hi))
+	intervals.sort_custom(func(x:Vector2,y:Vector2)->bool:return x.x<y.x)
+	if intervals.is_empty():return 0.0
+	var total=0.0
+	var begin=intervals[0].x
+	var end=intervals[0].y
+	for i in range(1,intervals.size()):
+		var interval=intervals[i]
+		if interval.x>end:
+			total+=end-begin
+			begin=interval.x
+			end=interval.y
+		else:end=maxf(end,interval.y)
+	return clampf(total+end-begin,0.0,length)
+
+func _covered_route(route:Array,circles:Array)->float:
+	var total=0.0
+	for i in range(route.size()-1):
+		total+=_covered_segment(route[i],route[i+1],circles)
+	return total
+
+func coverage_current()->Array:
+	var result:Array=[]
+	var circles=_layout_circles(towers)
+	for lane in _active_lanes():
+		var length=path_length(lane.route)
+		var covered=_covered_route(lane.route,circles)
+		result.append({"id":lane.id,"length":length,"covered":covered,"fraction":covered/length if length>0.0 else 0.0})
+	return result
+
+func coverage_preview(cell:Vector2i,kind:int,rank:int=1,ignore_id:int=-1)->Dictionary:
+	var reason=placement_error(cell,kind,ignore_id)
+	if reason.is_empty() and (rank<1 or rank>3):reason="Invalid tower rank."
+	if reason.is_empty() and ignore_id!=-1:
+		var owned=_find_tower(ignore_id)
+		if owned.is_empty() or owned.kind!=kind or owned.rank!=rank:reason="Invalid tower selection."
+	if not reason.is_empty():return {"valid":false,"reason":reason,"lanes":[]}
+	var layout:Array=[]
+	for t in towers:
+		if t.id!=ignore_id:layout.append(t)
+	# Read-only proposal: append a private candidate, never mutate owned dictionaries.
+	var candidate={"id":ignore_id,"kind":kind,"rank":rank,"cell":cell}
+	layout.append(candidate)
+	return _coverage_comparison(layout,candidate)
+
+# Mirrors merge_towers' existing ownership/location rules without actually changing them.
+func coverage_merge_preview(id_a:int,id_b:int)->Dictionary:
+	if phase!="build" or id_a==id_b:return {"valid":false,"reason":"Merge requires two different units during preparation.","lanes":[]}
+	var a=_find_tower(id_a);var b=_find_tower(id_b)
+	if a.is_empty() or b.is_empty() or a.kind!=b.kind or a.rank!=b.rank or a.rank>=3:
+		return {"valid":false,"reason":"Merge requires matching profession and rank below R3.","lanes":[]}
+	var layout:Array=[]
+	for t in towers:
+		if t.id!=id_a and t.id!=id_b:layout.append(t)
+	var candidate:Dictionary={}
+	if _has_id(towers,id_a) or _has_id(towers,id_b):
+		var cell:Vector2i=a.cell if _has_id(towers,id_a) else b.cell
+		candidate={"id":id_a,"kind":a.kind,"rank":a.rank+1,"cell":cell}
+		layout.append(candidate)
+	return _coverage_comparison(layout,candidate)
+
+func _coverage_comparison(layout:Array,candidate:Dictionary)->Dictionary:
+	var before=_layout_circles(towers)
+	var after=_layout_circles(layout)
+	var unit:Array=[]
+	if not candidate.is_empty():
+		var st=_stats_for_layout(candidate.cell,candidate.kind,candidate.rank,candidate.id,layout)
+		unit=[{"center":Vector2(candidate.cell),"radius":float(st[1])}]
+	var result:Array=[]
+	for lane in _active_lanes():
+		var length=path_length(lane.route)
+		var covered_before=_covered_route(lane.route,before)
+		var covered_after=_covered_route(lane.route,after)
+		result.append({"id":lane.id,"length":length,"unit_covered":_covered_route(lane.route,unit),"team_before":covered_before,"team_after":covered_after,"delta":covered_after-covered_before})
+	return {"valid":true,"reason":"","lanes":result}
 
 func spawn() -> void:
 	# Rift enemies supplement the deterministic main role sequence; opening it never changes main roles or speed.

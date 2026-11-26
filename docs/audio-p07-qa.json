@@ -1,0 +1,55 @@
+{
+  "decoded_pairs": 42,
+  "maximum_master_runtime_diff": 1.5318531961738824e-05,
+  "max_source_peak_dbfs": -6.000212666958634,
+  "loops": [
+    {
+      "event": "ambience_sea",
+      "seam": [
+        0.0026245918149357585,
+        0.0012512588885158875
+      ],
+      "p95_adjacent": [
+        0.009735404522843105,
+        0.009704886013367109
+      ],
+      "pass": true
+    },
+    {
+      "event": "ambience_battle",
+      "seam": [
+        0.0032959990234076968,
+        0.0014648884548478652
+      ],
+      "p95_adjacent": [
+        0.007293923764763329,
+        0.007324442274239326
+      ],
+      "pass": true
+    }
+  ],
+  "loot_mix": [
+    {
+      "result": "loot_crew",
+      "peak_dbfs": -18.317328019958815
+    },
+    {
+      "result": "loot_relic",
+      "peak_dbfs": -15.814406778395467
+    },
+    {
+      "result": "loot_upgrade",
+      "peak_dbfs": -16.013578559661653
+    }
+  ],
+  "combat_overlap_runs": 250,
+  "combat_overlap_peak_dbfs": -10.938679275089807,
+  "preview": "docs/audio-review-preview.wav",
+  "preview_sha256": "6724b35219c69f38fc452a368657422e30f585315659dec77a1723462dd82919",
+  "preview_order": [
+    "crew (0-1.35s)",
+    "relic (2-3.35s)",
+    "upgrade (4-5.35s)"
+  ],
+  "limitations": "offline mixing with current gain constants, not a real hardware audio audition"
+}
