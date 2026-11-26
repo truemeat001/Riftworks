@@ -1,0 +1,211 @@
+[
+  {
+    "path": "assets/environment/deployment_pad.png",
+    "width": 264,
+    "height": 191,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      4,
+      4,
+      260,
+      187
+    ],
+    "bytes": 68722,
+    "sha256": "6eaafd410671764609434659904f2c4d432563fa9478c913ea75c01ace5c5bb1"
+  },
+  {
+    "path": "assets/environment/echoreef_background.png",
+    "width": 1585,
+    "height": 992,
+    "mode": "RGB",
+    "alpha_bbox_threshold_8": null,
+    "bytes": 2703399,
+    "sha256": "77a0442ba7f2e991b3b7e9da3d2d04472ed5ff5ddb1756bb2f82648a9d5d0179"
+  },
+  {
+    "path": "assets/environment/lighthouse.png",
+    "width": 202,
+    "height": 392,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      5,
+      5,
+      195,
+      387
+    ],
+    "bytes": 105157,
+    "sha256": "bce6a91933c6b1e79f8899e2fb71913785a64ab1bebcd6ae66623917798eadb8"
+  },
+  {
+    "path": "assets/environment/portal.png",
+    "width": 392,
+    "height": 358,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      6,
+      7,
+      387,
+      352
+    ],
+    "bytes": 210986,
+    "sha256": "7591ccb81ec31b21ae74aed313b4cf89051638bb3353ecc9b64fa6946cf15cf0"
+  },
+  {
+    "path": "assets/environment/tidecross_background.png",
+    "width": 1585,
+    "height": 992,
+    "mode": "RGB",
+    "alpha_bbox_threshold_8": null,
+    "bytes": 2828382,
+    "sha256": "6abd501007bbcc5a12d2cfe251f0030ec131b0daf81ddfc1eff3b4b0ac42c5fc"
+  },
+  {
+    "path": "assets/environment/twintide_background.png",
+    "width": 1585,
+    "height": 992,
+    "mode": "RGB",
+    "alpha_bbox_threshold_8": null,
+    "bytes": 2622429,
+    "sha256": "d8e02a583d0f9ca065a5fa4f199f1a400fb612fc628077455c5e445e849cf84e"
+  },
+  {
+    "path": "assets/items/chest_closed.png",
+    "width": 512,
+    "height": 512,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      46,
+      125,
+      466,
+      490
+    ],
+    "bytes": 286587,
+    "sha256": "761bf79104ab61fe9a6819c3dc72dffd3e7d907854d9f0f20fdd1a3f1353e669"
+  },
+  {
+    "path": "assets/items/chest_open.png",
+    "width": 512,
+    "height": 512,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      43,
+      29,
+      470,
+      491
+    ],
+    "bytes": 330317,
+    "sha256": "b95d2832383bcf46333e84451e38b28003ae896917ea2c07397d38a4f12eea3e"
+  },
+  {
+    "path": "assets/items/relics/blast.png",
+    "width": 128,
+    "height": 128,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      13,
+      9,
+      115,
+      119
+    ],
+    "bytes": 23564,
+    "sha256": "c478300af2bc905b472b5734487d8f498f36a6f68528dd26eb84dcf1fcec1051"
+  },
+  {
+    "path": "assets/items/relics/chain.png",
+    "width": 128,
+    "height": 128,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      8,
+      9,
+      120,
+      119
+    ],
+    "bytes": 26446,
+    "sha256": "00c7d2c649ffdb6c7dd0cb62d4549249f35d158a27e8e435c6afee808e110e5f"
+  },
+  {
+    "path": "assets/items/relics/focus.png",
+    "width": 128,
+    "height": 128,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      8,
+      8,
+      120,
+      120
+    ],
+    "bytes": 27254,
+    "sha256": "efc0c8fa7eba23fb69680ebd868b7912fb11fc5c9ab3bb9ffdd3df51a31a4dc6"
+  },
+  {
+    "path": "assets/items/relics/freeze.png",
+    "width": 128,
+    "height": 128,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      16,
+      9,
+      110,
+      120
+    ],
+    "bytes": 22126,
+    "sha256": "9e7e4744b5a9d7617ee64cf47fe02c57b07e1ecd6dc16367e47fe98681697529"
+  },
+  {
+    "path": "assets/items/relics/power.png",
+    "width": 128,
+    "height": 128,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      14,
+      14,
+      112,
+      120
+    ],
+    "bytes": 21060,
+    "sha256": "a0d81a421d4b39005b47532cb8b05924cbdeb454d7d622d998157049a6865f99"
+  },
+  {
+    "path": "assets/items/relics/range.png",
+    "width": 128,
+    "height": 128,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      10,
+      11,
+      118,
+      120
+    ],
+    "bytes": 23384,
+    "sha256": "f95fd492fea3c0cca75aa1f0b05f520c2b4acfffbc35a14df07894a5fcb899b6"
+  },
+  {
+    "path": "assets/items/relics/rapid.png",
+    "width": 128,
+    "height": 128,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      10,
+      9,
+      118,
+      119
+    ],
+    "bytes": 25231,
+    "sha256": "eb7efbe931bab0173d175345d55759578810a5d1d41b48c191a9c7befa2b3706"
+  },
+  {
+    "path": "assets/items/relics/relay.png",
+    "width": 128,
+    "height": 128,
+    "mode": "RGBA",
+    "alpha_bbox_threshold_8": [
+      9,
+      10,
+      118,
+      117
+    ],
+    "bytes": 25890,
+    "sha256": "4eeb1b8db7ee59e466b585998b18839ca6ea8154193238ea1c661c29118e6331"
+  }
+]
