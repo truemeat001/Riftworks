@@ -1,0 +1,14 @@
+{
+  "native_driver": "opengl3",
+  "view_size": [
+    1280,
+    1600
+  ],
+  "frame_references": 136,
+  "active_pixels": 316424,
+  "differing_active_pixels": 440,
+  "max_channel_delta": 6,
+  "active_mean_absolute_delta": 0.0006984299547442672,
+  "nonzero_pixels_gt_8": 0,
+  "source_pixel_reconstruction_exact": 136
+}
