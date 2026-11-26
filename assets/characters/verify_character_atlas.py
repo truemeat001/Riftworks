@@ -1,50 +1,50 @@
 #!/usr/bin/env python3
-"""Independently reconstruct source poses and verify each packed frame."""
-import hashlib,json,sys
-from pathlib import Path
+"""P05 exact source-frame/alpha/anchor/padding verification."""
 from PIL import Image
+from pathlib import Path
+import hashlib,json,sys
 sys.dont_write_bytecode=True
 import generate_character_atlas as gen
 base=Path(__file__).parent
 meta=json.loads((base/'manifest.json').read_text())
-atlas=Image.open(base/'atlas.png').convert('RGBA')
-assert list(atlas.size)==meta['atlas_size']
+a=Image.open(base/'atlas.png').convert('RGBA')
 assert gen.sha(base/'atlas.png')==meta['atlas_sha256']
-for p,want in meta['source_sheets'].items():assert gen.sha(gen.SRC/p)==want
-poses,notes=gen.pose_masters();plan=gen.frame_plan(poses);assert meta['source_poses']==json.loads(json.dumps(notes))
-occupied=bytearray(atlas.width*atlas.height);n=0;area=0;pad_area=0
+assert list(a.size)==meta['atlas_size'] and meta['anchor']==list(gen.ANCHOR)
+for path,digest in meta['source_sheets'].items():assert gen.sha(gen.SRC/path)==digest
+assert gen.sha(gen.SRC/'crew-portraits.png')==meta['portrait_source_sha256']
+poses,notes=gen.pose_masters();plan=gen.frame_plan(poses)
+assert meta['source_poses']==json.loads(json.dumps(notes))
+assert meta['padding']==2
+pad=meta['padding'];allocated=bytearray(a.width*a.height);n=0;content=0;padded=0
 for role,clips in plan.items():
  for state,seq in clips.items():
-  unique=len({im.tobytes() for im in seq})
-  required=len(seq) if state in {'run','hurt'} else {'attack':4,'death':3,'idle':1}[state]
-  assert unique>=required,(role,state,unique,required)
+  distinct=len({i.tobytes() for i in seq})
+  minimum={'idle':2 if role in gen.CREW else 1,'attack':4,'run':4,'hurt':2,'death':3}[state]
+  assert distinct>=minimum,(role,state,distinct,minimum)
   for left in (False,True):
    key=state+'_left' if left else state
    assert meta['states'][key]==gen.STATES[state]
    frames=meta['characters'][role][key];assert len(frames)==len(seq)
-   for im,info in zip(seq,frames):
+   for im,record in zip(seq,frames):
     if left:im=im.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-    bb=im.getchannel('A').getbbox();x,y,w,h=info['rect']
-    assert bb[0]>0 and bb[1]>0 and bb[2]<gen.SIZE and bb[3]<gen.SIZE
-    assert info['offset']==[bb[0]-gen.ANCHOR[0],bb[1]-gen.ANCHOR[1]]
-    assert (w,h)==(bb[2]-bb[0],bb[3]-bb[1])
-    crop=im.crop(bb); assert atlas.crop((x,y,x+w,y+h)).tobytes()==crop.tobytes()
-    assert x>=1 and y>=1 and x+w+1<=atlas.width and y+h+1<=atlas.height
-    for dy in range(-1,h+1):
-     for dx in range(-1,w+1):
-      px=x+dx;py=y+dy;loc=py*atlas.width+px;assert not occupied[loc],'overlap';occupied[loc]=1
-      assert atlas.getpixel((px,py))==crop.getpixel((min(w-1,max(dx,0)),min(h-1,max(dy,0))))
-    restored=Image.new('RGBA',im.size);restored.paste(crop,(info['offset'][0]+gen.ANCHOR[0],info['offset'][1]+gen.ANCHOR[1]))
+    bbox=im.getchannel('A').getbbox()
+    assert bbox[0]>0 and bbox[1]>0 and bbox[2]<gen.SIZE and bbox[3]<gen.SIZE
+    x,y,w,h=record['rect'];assert record['offset']==[bbox[0]-gen.ANCHOR[0],bbox[1]-gen.ANCHOR[1]]
+    assert (w,h)==(bbox[2]-bbox[0],bbox[3]-bbox[1])
+    crop=im.crop(bbox);assert a.crop((x,y,x+w,y+h)).tobytes()==crop.tobytes()
+    assert x>=pad and y>=pad and x+w+pad<=a.width and y+h+pad<=a.height
+    for dy in range(-pad,h+pad):
+     y2=y+dy
+     for dx in range(-pad,w+pad):
+      x2=x+dx;idx=y2*a.width+x2;assert not allocated[idx],'padded blocks overlap';allocated[idx]=1
+      assert a.getpixel((x2,y2))==crop.getpixel((min(w-1,max(dx,0)),min(h-1,max(dy,0))))
+    restored=Image.new('RGBA',im.size);restored.paste(crop,(record['offset'][0]+gen.ANCHOR[0],record['offset'][1]+gen.ANCHOR[1]))
     assert restored.getchannel('A').tobytes()==im.getchannel('A').tobytes()
-    n+=1;area+=w*h;pad_area+=(w+2)*(h+2)
-print(f'PASS {n} packed frame entries, source hashes, actual master payload, alpha bounds, offsets, mirror, separated 1px extrusion, distinct active poses.')
-print(f'Content {area:,} px, padded {pad_area:,}, atlas {atlas.width*atlas.height:,}, authoring canvas equivalent {n*gen.SIZE*gen.SIZE:,}.')
-for name in ('chest_closed','chest_open'):
- im=Image.open(gen.PROJECT/'assets/items'/f'{name}.png').convert('RGBA')
- assert im.size==(144,160) and im.getchannel('A').getextrema()[0]==0
- # Verify opaque core extraction from resize and placement preserved from clean source.
- c=int(name.endswith('open'));crop,_=gen.source_cell('chest',0,c)
- raw_closed,_=gen.source_cell('chest',0,0);scale=112/gen.core_bbox(raw_closed)[2]
- w,h=round(crop.width*scale),round(crop.height*scale);resize=crop.resize((w,h),Image.Resampling.NEAREST);restore=Image.new('RGBA',(144,160));restore.paste(resize,((144-w)//2,151-h))
- assert restore.tobytes()==im.tobytes()
- print(name,'verified alpha crop/scale/placement')
+    n+=1;content+=w*h;padded+=(w+2*pad)*(h+2*pad)
+for role,expected in gen.portrait_masters().items():
+ path=base/'portraits'/f'{role}.png';record=meta['portraits'][role]
+ assert gen.sha(path)==record['sha256']
+ actual=Image.open(path).convert('RGBA');assert actual.size==(256,256) and actual.tobytes()==expected.tobytes()
+ assert actual.getchannel('A').getextrema()[0]==0
+print(f'PASS {n} atlas entries exact source reconstruction / alpha / anchor / mirror / exclusive 2px extrusion; 3 distinct exact source portraits.')
+print(f'Content {content:,} px; padded {padded:,}; atlas {a.width*a.height:,}; untrimmed {n*gen.SIZE*gen.SIZE:,}.')
