@@ -13,6 +13,9 @@ const ICE=Color("d4f2ec")
 const SAND=Color("a67553")
 const INK=Color("213d48")
 const PAPER=Color("fff6e4")
+const GUARD_EVENT_TICKS:int=10
+const GUARD_BRASS=Color("a67538")
+const GUARD_WAIT=Color("546568")
 
 var traces:Array=[]
 var previous_traces:Array=[]
@@ -308,6 +311,7 @@ func draw_combat(canvas:CanvasItem,game,origin:Vector2,tile:float)->void:
 			_ring(canvas,p,10.0+u*8.0,Color(PAPER,0.4*a),2.0)
 
 	_draw_transfers(canvas,game,origin,tile)
+	_draw_guard_intercepts(canvas,game,origin,tile)
 
 func _draw_transfers(canvas:CanvasItem,game,origin:Vector2,tile:float)->void:
 	# Actual non-damage tide transfer event; old/disabled Run has no list.
@@ -338,6 +342,148 @@ func _draw_transfers(canvas:CanvasItem,game,origin:Vector2,tile:float)->void:
 			var p:Vector2=from.lerp(to,f)+n*sin(f*PI)*6.0
 			canvas.draw_polyline(PackedVector2Array([p-dir*5.0+n*3.0,p,p-dir*5.0-n*3.0]),Color(0.81,0.99,0.96,a*0.8),1.5,true)
 		_ring(canvas,to,5.0+u*7.0,Color(0.20,0.60,0.64,a*0.68),1.4)
+
+# Guard ready/cooldown state is about that live unit's cooldown only, not a
+# preview assertion that any particular ally would be redirected.
+func guard_status_records(game,layout:Dictionary)->Array:
+	if game.phase!="fight" or not game.has_method("guard_ready") or not game.has_method("guard_remaining_ticks"):return []
+	var units:Dictionary=layout.get("units",{})
+	var blocked:Array=[]
+	var warning:Rect2=layout.get("warning_rect",Rect2())
+	if warning.size.x>0.0:blocked.append(warning.grow(2.0))
+	for u in units.values():
+		if bool(u.get("bar_draw",false)):blocked.append(Rect2(u.bar_pos,u.bar_size).grow(3.0))
+		else:blocked.append(Rect2(Vector2(u.anchor)-Vector2(5,5),Vector2(10,10)))
+	var board:Rect2=layout.get("board",Rect2(Vector2.ZERO,Vector2(1016,676)))
+	var guards:Array=[]
+	for enemy in game.enemies:
+		if float(enemy.get("hp",0.0))>0.0 and str(enemy.get("role",""))=="guard" and not bool(enemy.get("boss",false)) and units.has(int(enemy.id)):guards.append(enemy)
+	guards.sort_custom(func(a,b):return int(a.id)<int(b.id))
+	var result:Array=[]
+	var cooldown_ticks:int=0
+	var model_script=game.get_script()
+	if model_script!=null:cooldown_ticks=maxi(0,int(model_script.get_script_constant_map().get("GUARD_INTERCEPT_TICKS",0)))
+	for enemy in guards:
+		var ready:bool=game.guard_ready(enemy)
+		var remaining:int=game.guard_remaining_ticks(enemy)
+		# Disabled feature returns both false and zero; don't invent passive badge.
+		if not ready and remaining<=0:continue
+		var row:Dictionary=units[int(enemy.id)]
+		var anchor:Vector2=row.anchor
+		var best:Vector2=anchor
+		var best_score:float=INF
+		var chosen:=Rect2()
+		var offsets=[Vector2(22,-19),Vector2(-22,-19),Vector2(29,-28),Vector2(-29,-28),
+			Vector2(27,-7),Vector2(-27,-7),Vector2(8,-30),Vector2(-8,-30),Vector2(0,-5),
+			Vector2(33,-14),Vector2(-33,-14),Vector2(20,-36),Vector2(-20,-36),
+			Vector2(3,-39),Vector2(-3,-39),Vector2(35,3),Vector2(-35,3),
+			Vector2(0,0),Vector2(18,0),Vector2(-18,0),Vector2(30,14),Vector2(-30,14),
+			Vector2(39,-12),Vector2(-39,-12),Vector2(20,9),Vector2(-20,9),
+			Vector2(40,0),Vector2(-40,0),Vector2(15,-39),Vector2(-15,-39)]
+		# A compact 12px icon is a last resort if all normal16px slots
+		# collide with critical data; no badge is permitted to cover HP/alert.
+		for badge_size in [16.0,12.0]:
+			for i in range(offsets.size()):
+				var p:Vector2=anchor+Vector2(offsets[i])
+				var half:float=float(badge_size)/2.0
+				var rect:=Rect2(p-Vector2.ONE*half,Vector2.ONE*float(badge_size))
+				if not board.encloses(rect.grow(1.0)):continue
+				if blocked.any(func(b):return rect.grow(1.0).intersects(b)):continue
+				# Prefer the guard's side over unrelated enemy footprint.
+				# Critical HP/warning geometries never overlap either size.
+				var score:float=float(i)*0.4+ (0.0 if badge_size==16.0 else 80.0)
+				for other in units.values():
+					if int(other.id)==int(enemy.id):continue
+					var h:float=112.0 if other.boss else (67.0 if other.role=="guard" else 53.0)
+					var w:float=105.0 if other.boss else (70.0 if other.role=="guard" else (68.0 if other.role=="runner" else 55.0))
+					var sc:float=other.scale_mul
+					var bbox:=Rect2(Vector2(other.anchor)-Vector2(w*sc/2.0,h*sc),Vector2(w,h)*sc)
+					if rect.intersects(bbox):score+=10.0+rect.intersection(bbox).get_area()/32.0
+				if score<best_score:
+					best_score=score
+					best=p
+					chosen=rect
+			if chosen.size.x>0.0:break
+		var shown:bool=chosen.size.x>0.0
+		if shown:blocked.append(chosen.grow(2.0))
+		result.append({"guard_id":int(enemy.id),"ready":ready,"remaining":remaining,
+			"point":best,"rect":chosen,"draw":shown,"anchor":anchor,"cooldown_ticks":cooldown_ticks,"scale":chosen.size.x/16.0 if shown else 0.0})
+	return result
+
+func _shield_shape(center:Vector2,r:float)->PackedVector2Array:
+	return PackedVector2Array([center+Vector2(-r,-r),center+Vector2(r,-r),center+Vector2(r*0.82,r*0.16),center+Vector2(0,r),center+Vector2(-r*0.82,r*0.16)])
+
+func draw_guard_status(canvas:CanvasItem,game,layout:Dictionary)->void:
+	for record in guard_status_records(game,layout):
+		if not record.draw:continue
+		var p:Vector2=record.point
+		var ready:bool=record.ready
+		var edge:Color=TEAL if ready else GUARD_WAIT
+		var s:float=record.scale
+		var shape:PackedVector2Array=_shield_shape(p,7.0*s)
+		canvas.draw_colored_polygon(shape,PAPER)
+		shape.append(shape[0])
+		canvas.draw_polyline(shape,edge,1.7,true)
+		if ready:
+			canvas.draw_polyline(PackedVector2Array([p+Vector2(-3,0)*s,p+Vector2(-1,3)*s,p+Vector2(4,-3)*s]),edge,1.8*maxf(s,0.8),true)
+		else:
+			# Only a true remaining cooldown produces this small dial, not a
+			# phantom intercept. The total is read from the actual model constant.
+			canvas.draw_arc(p,4.1*s,0,TAU,18,Color(GUARD_WAIT,0.30),1.2,true)
+			var fraction:float=clampf(float(record.remaining)/float(record.cooldown_ticks),0.0,1.0) if int(record.cooldown_ticks)>0 else 0.0
+			if fraction>0.0:canvas.draw_arc(p,4.1*s,-PI/2.0,-PI/2.0+TAU*fraction,18,edge,1.7,true)
+
+# Read the actual event snapshot, never substitute later moving visual
+# recipient positions. A lethal intercept remains at its historical point.
+func guard_redirect_records(game)->Array:
+	if game.phase!="fight":return []
+	var events_source=game.get("guard_intercepts")
+	if not events_source is Array:return []
+	var result:Array=[]
+	var seen:Dictionary={}
+	for event in events_source:
+		if not event is Dictionary:continue
+		var age:int=int(game.tick_count)-int(event.get("tick",-999))
+		if age<0 or age>=GUARD_EVENT_TICKS:continue
+		if not event.has_all(["tick","tower_id","intended_id","guard_id","from","to","attacker_pos","damage","ready_tick"]):continue
+		if event.intended_id==event.guard_id or float(event.damage)<=0.0:continue
+		var key:String="%d:%d:%d:%d"%[event.tick,event.tower_id,event.intended_id,event.guard_id]
+		if seen.has(key):continue
+		seen[key]=true
+		result.append({"key":key,"tick":int(event.tick),"age":age,"guard_id":int(event.guard_id),"intended_id":int(event.intended_id),
+			"from":Vector2(event.from),"to":Vector2(event.to),"attacker_pos":Vector2(event.attacker_pos),"damage":float(event.damage),"ready_tick":int(event.ready_tick)})
+	return result
+
+func _draw_guard_intercepts(canvas:CanvasItem,game,origin:Vector2,tile:float)->void:
+	for record in guard_redirect_records(game):
+		var age:float=float(record.age)/float(GUARD_EVENT_TICKS)
+		var a:float=1.0-age
+		var protected_point:Vector2=_world(record.from,origin,tile)
+		var recipient:Vector2=_world(record.to,origin,tile)
+		var attacker:Vector2=_world(record.attacker_pos,origin,tile)
+		# The existing actual damaging shot already travels attacker->guard.
+		# A thin dashed brass relation ONLY denotes the intercepted target
+		# relationship, never add an impact at the protected (intended) unit.
+		if protected_point.distance_to(recipient)>2.0:
+			canvas.draw_dashed_line(protected_point,recipient,Color(GUARD_BRASS,a*0.77),1.6,4.5,true)
+			var dir:Vector2=(recipient-protected_point).normalized()
+			var p:Vector2=protected_point.lerp(recipient,0.72)
+			var cross:Vector2=dir.orthogonal()*3.2
+			canvas.draw_polyline(PackedVector2Array([p-dir*5.0+cross,p,p-dir*5.0-cross]),Color(GUARD_BRASS,a*0.9),1.6,true)
+		# Confirmed shield flash at ACTUAL recipient, a brass side arc facing
+		# incoming attack (not an area effect, not a damage-number duplicate).
+		var facing:Vector2=(attacker-recipient).normalized()
+		if facing.length_squared()<0.001:facing=Vector2.RIGHT
+		var theta:float=facing.angle()
+		var radius:float=11.0+age*10.0
+		canvas.draw_arc(recipient,radius,theta-PI*0.42,theta+PI*0.42,20,Color(GUARD_BRASS,a*0.88),3.0,true)
+		if age<0.5:
+			canvas.draw_arc(recipient,radius-3.0,theta-PI*0.32,theta+PI*0.32,16,Color(PAPER,a*0.95),1.8,true)
+			var flash:Vector2=recipient+facing*radius
+			var shape:PackedVector2Array=_shield_shape(flash,5.5)
+			canvas.draw_colored_polygon(shape,Color(PAPER,a*0.85))
+			shape.append(shape[0])
+			canvas.draw_polyline(shape,Color(GUARD_BRASS,a*0.95),1.8,true)
 
 func draw_alert(canvas:CanvasItem,game,origin:Vector2,tile:float,font:Font)->void:
 	if game.phase!="fight":return

@@ -1,0 +1,93 @@
+{
+  "baseline": {
+    "capture_rate": 44100,
+    "headroom_peak_dbtp": -17.5,
+    "master_clip_samples": 0,
+    "master_duration_ms": 5015.51,
+    "fit_fader_db": [
+      -2.9999637921064473,
+      -10.00001859034156,
+      -4.0000811635995195
+    ],
+    "fit_relative_residual": 0.0009806189041967972,
+    "danger_second_chime_rms_margin_db": 2.901223269874997,
+    "danger_second_chime_150_800Hz_margin_db": 7.790709674524024,
+    "saturated_second_chime_projection": -0.04263929752719884,
+    "saturated_second_chime_correlation": -0.029248262832624935,
+    "danger_survives_leaks": false,
+    "leak_survives": true,
+    "alert_ids_after_leaks": [
+      "leak",
+      "leak"
+    ],
+    "alert_ids_after_low_priority": [
+      "leak",
+      "wave_start"
+    ],
+    "low_priority_accepted": true,
+    "locked_master_rms_dbfs": -240.0,
+    "no_autoplay": true,
+    "paused_rejects_combat": true,
+    "settled_paused_combat_rms_dbfs": -70.16911393346612,
+    "settled_paused_alert_rms_dbfs": -240.0,
+    "mute_flag": true,
+    "unmute_flag": true,
+    "muted_master_capture_is_pre_fader": true,
+    "max_voices": {
+      "Alert": 1,
+      "Ambience": 2,
+      "Combat": 6,
+      "UI": 0,
+      "loot": 0
+    },
+    "dropped_events": 457,
+    "subjective_listening": "NOT_TESTED",
+    "gate_pass": false
+  },
+  "candidate": {
+    "capture_rate": 44100,
+    "headroom_peak_dbtp": -16.2,
+    "master_clip_samples": 0,
+    "master_duration_ms": 4922.63,
+    "fit_fader_db": [
+      -3.0000096511217094,
+      -10.000013637325338,
+      -4.000026679710219
+    ],
+    "fit_relative_residual": 0.0008188009755135004,
+    "danger_second_chime_rms_margin_db": 3.916546887320166,
+    "danger_second_chime_150_800Hz_margin_db": 6.908951729659925,
+    "saturated_second_chime_projection": 0.9944316971943965,
+    "saturated_second_chime_correlation": 0.9281643784018474,
+    "danger_survives_leaks": true,
+    "leak_survives": true,
+    "alert_ids_after_leaks": [
+      "danger",
+      "leak"
+    ],
+    "alert_ids_after_low_priority": [
+      "danger",
+      "leak"
+    ],
+    "low_priority_accepted": false,
+    "locked_master_rms_dbfs": -240.0,
+    "no_autoplay": true,
+    "paused_rejects_combat": true,
+    "settled_paused_combat_rms_dbfs": -240.0,
+    "settled_paused_alert_rms_dbfs": -240.0,
+    "mute_flag": true,
+    "unmute_flag": true,
+    "muted_master_capture_is_pre_fader": true,
+    "max_voices": {
+      "Alert": 1,
+      "Ambience": 2,
+      "Combat": 6,
+      "UI": 0,
+      "loot": 0
+    },
+    "dropped_events": 444,
+    "subjective_listening": "NOT_TESTED",
+    "gate_pass": true
+  },
+  "limit": "Controller stress directly invokes genuine audio events with synthetic x2-equivalent schedule; not a real campaign nor browser speaker audition. Capture is actual software mixer electrical signal; mute is verified flag, Master capture is pre-fader. Spectral margins are descriptive project gates, not proven perception."
+}

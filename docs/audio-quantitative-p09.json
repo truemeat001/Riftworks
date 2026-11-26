@@ -1,0 +1,16 @@
+{
+  "assets": 45,
+  "technical_pass": 45,
+  "failures": [],
+  "review_warnings": [
+    "new event hit_intercept:1",
+    "new event hit_intercept:2",
+    "new event hit_intercept:3"
+  ],
+  "worst_asset_true_peak_dbtp": -6.0,
+  "clip_samples_total": 0,
+  "lufs_unavailable_short_or_gated": 35,
+  "actual_engine_mix": [],
+  "subjective_listening": "NOT_TESTED",
+  "limits": "thresholds are Riftworks engineering suggestions, not universal psychoacoustic quality scores; LUFS omitted under 400 ms; true peak uses FFmpeg ebur128; spectral centroid uses 80 ms power spectrum."
+}

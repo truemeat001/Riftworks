@@ -7,16 +7,16 @@ const INVALID_POS=Vector2(-1,-1)
 const BASE_DB={"Master":-4.0,"SFX":-2.0,"UI":-2.0,"Combat":-4.0,"Alert":-1.0,"Ambience":-4.0,"Music":-4.0}
 const BUS_PARENT={"SFX":"Master","UI":"SFX","Combat":"SFX","Alert":"SFX","Ambience":"Master","Music":"Master"}
 const LIMITS={"loot":4,"UI":2,"Combat":6,"Alert":2}
-const VARIANTS={"chest_charge":1,"chest_open":3,"loot_crew":1,"loot_relic":1,"loot_upgrade":1,"loot_arrive":1,"ui_press":1,"ui_reject":1,"deploy":3,"recall":1,"merge":1,"sell":1,"wave_start":1,"hit_pulse":3,"hit_frost":3,"hit_burst":3,"kill":3,"conductive":3,"shatter":3,"danger":1,"leak":1,"wave_clear":1,"victory":1,"defeat":1}
-const COMBAT_IDS=["hit_pulse","hit_frost","hit_burst","kill","conductive","shatter"]
+const VARIANTS={"chest_charge":1,"chest_open":3,"loot_crew":1,"loot_relic":1,"loot_upgrade":1,"loot_arrive":1,"ui_press":1,"ui_reject":1,"deploy":3,"recall":1,"merge":1,"sell":1,"wave_start":1,"hit_pulse":3,"hit_frost":3,"hit_burst":3,"hit_intercept":3,"kill":3,"conductive":3,"shatter":3,"danger":1,"leak":1,"wave_clear":1,"victory":1,"defeat":1}
+const COMBAT_IDS=["hit_pulse","hit_frost","hit_burst","hit_intercept","kill","conductive","shatter"]
 const ALERT_IDS=["wave_start","danger","leak"]
 # Preserve the ongoing warning and at least one actual damage cue under saturation.
 # Entry fanfare is decorative relative to a real threat or actual damage.
 const ALERT_PRIORITY={"wave_start":0,"leak":2,"danger":3}
 const LOOT_IDS=["chest_charge","chest_open","loot_crew","loot_relic","loot_upgrade","loot_arrive"]
 # Per-event amplitude trims keep overlapping bursts below master headroom.
-const EVENT_GAIN={"chest_charge":-3.0,"chest_open":-5.0,"loot_crew":-4.0,"loot_relic":-3.0,"loot_upgrade":-3.0,"loot_arrive":-1.0,"ui_press":-4.0,"ui_reject":-3.0,"deploy":-3.0,"recall":-2.0,"merge":-4.0,"sell":-3.0,"wave_start":-3.0,"hit_pulse":-6.0,"hit_frost":-5.0,"hit_burst":-6.0,"kill":-5.0,"conductive":-8.0,"shatter":-7.0,"danger":-2.0,"leak":-2.0,"wave_clear":-4.0,"victory":-3.0,"defeat":-3.0}
-const COMBAT_GAP={"hit_pulse":0.07,"hit_frost":0.09,"hit_burst":0.10,"kill":0.09,"conductive":0.15,"shatter":0.15}
+const EVENT_GAIN={"chest_charge":-3.0,"chest_open":-5.0,"loot_crew":-4.0,"loot_relic":-3.0,"loot_upgrade":-3.0,"loot_arrive":-1.0,"ui_press":-4.0,"ui_reject":-3.0,"deploy":-3.0,"recall":-2.0,"merge":-4.0,"sell":-3.0,"wave_start":-3.0,"hit_pulse":-6.0,"hit_frost":-5.0,"hit_burst":-6.0,"hit_intercept":-5.0,"kill":-5.0,"conductive":-8.0,"shatter":-7.0,"danger":-2.0,"leak":-2.0,"wave_clear":-4.0,"victory":-3.0,"defeat":-3.0}
+const COMBAT_GAP={"hit_pulse":0.07,"hit_frost":0.09,"hit_burst":0.10,"hit_intercept":0.10,"kill":0.09,"conductive":0.15,"shatter":0.15}
 const LOOT_THRESHOLDS=[0.32,0.34,1.22]
 var unlocked:bool=false
 var battle_active:bool=false
@@ -45,16 +45,16 @@ var _dropped:int=0
 
 func _ready()->void:
 	# Do not play anything in ready: browser audio starts from a user gesture only.
-	for bus_name in BASE_DB:
+	# Godot 4.7.2 Web sample mixer: add_bus(-1) can reorder the browser
+	# bus graph (godotengine/godot#119026). A single set_count appends
+	# sequentially. Define parents before children so sends flow to lower indices.
+	# Never call add_bus or move_bus for any of these fixed buses.
+	var names=["Master","SFX","UI","Combat","Alert","Ambience","Music"]
+	AudioServer.bus_count=names.size()
+	for i in range(names.size()):
+		var bus_name:String=names[i]
 		volumes[bus_name]=1.0
-		var i=AudioServer.get_bus_index(bus_name)
-		if i<0:
-			AudioServer.add_bus()
-			i=AudioServer.bus_count-1
-			AudioServer.set_bus_name(i,bus_name)
-		if BUS_PARENT.has(bus_name):
-			AudioServer.set_bus_send(i,BUS_PARENT[bus_name])
-	# Explicitly restate sends after all buses exist (bus order remains Master, SFX etc.).
+		if i>0:AudioServer.set_bus_name(i,bus_name)
 	for bus_name in BUS_PARENT:
 		AudioServer.set_bus_send(AudioServer.get_bus_index(bus_name),BUS_PARENT[bus_name])
 	for bus_name in volumes:_apply_volume(str(bus_name))
@@ -73,6 +73,7 @@ func _ready()->void:
 func _make_loop(file:String)->AudioStreamPlayer:
 	var p=AudioStreamPlayer.new()
 	p.bus="Ambience"
+	if OS.has_feature("web"):p.playback_type=AudioServer.PLAYBACK_TYPE_SAMPLE
 	p.stream=load(AUDIO_PATH+file)
 	if p.stream is AudioStreamWAV:
 		# Imported PCM16 stereo = 4 bytes per frame; actual frame count is tested.
@@ -84,10 +85,19 @@ func _make_loop(file:String)->AudioStreamPlayer:
 	return p
 
 func unlock()->void:
-	if unlocked:return
+	# On Web each physical mouse/key/touch callback already asks Godot's
+	# AudioContext to resume. Recheck only stopped beds; never restart a
+	# running loop when the user clicks another control or retries sound.
 	unlocked=true
-	if _sea!=null and _sea.stream!=null:_sea.play()
-	if _battle_bed!=null and _battle_bed.stream!=null:_battle_bed.play()
+	if _sea!=null and _sea.stream!=null and not _sea.playing:_sea.play()
+	if _battle_bed!=null and _battle_bed.stream!=null and not _battle_bed.playing:_battle_bed.play()
+
+# Called only by the explicit sound-test control after a real user gesture.
+# Replays a known short UI cue without changing the game/RNG or mute state.
+func test_sound()->bool:
+	if muted:return false
+	unlock()
+	return play_event("ui_press")
 
 func set_muted(value:bool)->void:
 	muted=value
@@ -179,9 +189,16 @@ func play_event(id:String,pos:Vector2=INVALID_POS,variant_hint:int=0)->bool:
 	for i in range(_voices.size()):
 		if _voices[i].group==group:same.append(i)
 	if same.size()>=int(LIMITS[group]):
-		# Combat overload drops new decoration; UI/loot replaces the oldest tail.
-		if group=="Combat":_dropped+=1;return false
+		# Ordinary combat overload drops new decoration. A genuine redirect cue is a
+		# distinct rule acknowledgement: it can replace one older ordinary hit tail,
+		# never increase the Combat cap or interrupt Alert/loot/UI groups.
 		var idx:int=same[0]
+		if group=="Combat":
+			if id!="hit_intercept":_dropped+=1;return false
+			idx=-1
+			for i in same:
+				if _voices[i].id!="hit_intercept":idx=i;break
+			if idx<0:_dropped+=1;return false
 		if group=="Alert":
 			# Prefer replacing a same-ID tail; otherwise evict the least-important
 			# existing alert only if it is no more important than the incoming one.
@@ -219,6 +236,7 @@ func play_event(id:String,pos:Vector2=INVALID_POS,variant_hint:int=0)->bool:
 		voice=p
 	else:voice=AudioStreamPlayer.new()
 	voice.stream=sources[variant]
+	if OS.has_feature("web"):voice.playback_type=AudioServer.PLAYBACK_TYPE_SAMPLE
 	voice.bus="UI" if group=="loot" else group
 	voice.volume_db=float(EVENT_GAIN.get(id,-4.0))
 	add_child(voice)

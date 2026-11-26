@@ -34,7 +34,7 @@ func _go()->void:
 			count+=1
 			check(s.format==AudioStreamWAV.FORMAT_16_BITS and s.mix_rate==48000 and not s.stereo,"bad runtime mono "+event)
 			check(s.get_length()>0.05 and s.loop_mode==AudioStreamWAV.LOOP_DISABLED,"invalid duration/loop: "+event)
-	check(count==40,"40 one-shot streams")
+	check(count==43 and a.VARIANTS.get("hit_intercept",0)==3,"40 original + 3 Guard one-shot streams")
 	for p in [a._sea,a._battle_bed]:
 		var s:AudioStreamWAV=p.stream
 		check(s.stereo and s.mix_rate==48000 and s.format==AudioStreamWAV.FORMAT_16_BITS,"ambient format")

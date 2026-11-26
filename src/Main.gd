@@ -38,6 +38,7 @@ var tutorial_button:Button
 var guide_hint_cell:=Vector2i(-1,-1)
 var audio_paused_seen:bool=false
 var sound_button:Button
+var test_sound_button:Button
 var notice_seen:String=""
 var notice_age:float=0.0
 var accumulator = 0.0
@@ -82,6 +83,8 @@ var paper_styles:Dictionary={}
 var route_visual_cache:Dictionary={}
 var sell_tower_button:Button
 var merge_button:Button
+var order_button:Button
+var report_button:Button
 var recall_button:Button
 var sell_core_button:Button
 var cancel_button:Button
@@ -179,11 +182,13 @@ func note_attacks()->void:
 	# Only the authoritative attack event may restart the presentation clip.
 	for t in game.towers:
 		if int(t.get("attack_tick",-1))!=game.tick_count:continue
+		if int(last_attacks.get(t.id,-1))==game.tick_count:continue
 		last_attacks[t.id]=game.tick_count
 		for shot in game.shots:
 			if int(shot.get("tower_id",-1))==t.id and Vector2(t.cell).is_equal_approx(shot.from):
 				last_directions[t.id]=shot.to.x<shot.from.x
-				audio.play_event(["hit_pulse","hit_frost","hit_burst"][t.kind],Vector2(shot.to),t.id)
+				var intercepted:bool=game.guard_intercepts.any(func(event):return int(event.tick)==game.tick_count and int(event.tower_id)==t.id)
+				audio.play_event("hit_intercept" if intercepted else ["hit_pulse","hit_frost","hit_burst"][t.kind],Vector2(shot.to),t.id)
 				var synergy:String=shot.get("synergy","")
 				if not synergy.is_empty():audio.play_event(synergy,Vector2(shot.to),t.id)
 				break
@@ -205,15 +210,18 @@ func _ready() -> void:
 	make_label(ui,"RIFTWORKS: TIDEWAY",Rect2(21,6,188,25),17)
 	label_seed=make_label(ui,"",Rect2(21,32,188,15),10,MUTED)
 	label_status=make_label(ui,"",Rect2(225,12,192,32),19,INK)
-	label_rule=make_label(ui,"",Rect2(445,8,210,34),18,INK)
-	tutorial_button=make_button(ui,"SKIP GUIDE",Rect2(659,9,75,32),MUTED,12)
+	label_rule=make_label(ui,"",Rect2(421,8,195,34),18,INK)
+	tutorial_button=make_button(ui,"SKIP GUIDE",Rect2(620,9,75,32),MUTED,12)
 	tutorial_button.pressed.connect(_toggle_tutorial)
-	label_phase=make_label(ui,"",Rect2(751,10,178,34),15,INK)
-	sound_button=make_button(ui,"SOUND ON",Rect2(930,9,78,32),MUTED,11)
+	label_phase=make_label(ui,"",Rect2(699,10,147,34),14,INK)
+	sound_button=make_button(ui,"SOUND ON",Rect2(850,9,78,32),MUTED,11)
 	sound_button.tooltip_text="Toggle all game audio. Audio starts after the first input gesture."
 	sound_button.pressed.connect(_toggle_sound)
+	test_sound_button=make_button(ui,"TEST SOUND",Rect2(932,9,76,32),MUTED,11,false)
+	test_sound_button.pressed.connect(_test_sound)
 	# Two compact planning ribbons stay off the map's actionable cells.
-	label_forecast=make_label(ui,"",Rect2(1031,265,231,72),12,MUTED)
+	label_forecast=make_label(ui,"",Rect2(1031,265,231,79),12,MUTED)
+	label_forecast.mouse_filter=Control.MOUSE_FILTER_PASS
 	label_message=make_label(ui,"",Rect2(16,675,656,22),12,INK)
 	explore_button=make_button(ui,"EXPLORE · 6",Rect2(1032,171,228,48),PRIMARY,19)
 	explore_button.pressed.connect(_explore)
@@ -221,7 +229,9 @@ func _ready() -> void:
 	skip_reveal_button=make_button(ui,"SKIP",Rect2(1194,139,67,26),MUTED,12)
 	skip_reveal_button.pressed.connect(func():restart_confirm="";sell_confirm="";_cancel_pointer();_skip_reveal();refresh())
 	label_selection=make_label(ui,"",Rect2(1110,346,149,44),15,INK)
-	label_tower_stats=make_label(ui,"",Rect2(1110,393,149,72),13,MUTED)
+	label_tower_stats=make_label(ui,"",Rect2(1110,395,149,41),12,MUTED)
+	order_button=make_button(ui,"ORDER",Rect2(1110,438,149,30),ACC,12)
+	order_button.pressed.connect(_toggle_order)
 	merge_button=make_button(ui,"MERGE",Rect2(1032,472,109,44),ACC,16)
 	merge_button.pressed.connect(_toggle_merge)
 	sell_tower_button=make_button(ui,"SELL",Rect2(1150,472,110,44),WARN,16)
@@ -266,6 +276,10 @@ func _ready() -> void:
 	speed_button.pressed.connect(_toggle_speed)
 	start_button=make_button(ui,"START WAVE",Rect2(680,749,323,44),PRIMARY,19)
 	start_button.pressed.connect(_start)
+	report_button=make_button(ui,"COPY TEST REPORT",Rect2(680,749,323,44),ACC,17)
+	report_button.tooltip_text="Copy a local gameplay summary for optional feedback. Nothing is sent automatically."
+	report_button.pressed.connect(_copy_test_report)
+	report_button.hide()
 	restart_button=make_button(ui,"RETRY",Rect2(806,680,92,28),MUTED,12)
 	restart_button.pressed.connect(_restart.bind(false))
 	new_seed_button=make_button(ui,"NEW RUN",Rect2(905,680,98,28),MUTED,12)
@@ -319,7 +333,7 @@ func configure_button(b:Button,color:Color,primary:bool=false)->void:
 	b.add_theme_stylebox_override("disabled",button_style(Color("d9d8ca"),Color("b8b9ad")))
 	b.add_theme_stylebox_override("focus",button_style(Color(0,0,0,0),ACC))
 
-func make_button(parent:Node,value:String,area:Rect2,color:Color=ACC,sz:int=14)->Button:
+func make_button(parent:Node,value:String,area:Rect2,color:Color=ACC,sz:int=14,click_sound:bool=true)->Button:
 	var b=Button.new()
 	b.text=value
 	b.position=area.position
@@ -328,7 +342,7 @@ func make_button(parent:Node,value:String,area:Rect2,color:Color=ACC,sz:int=14)-
 	configure_button(b,color,color==PRIMARY)
 	parent.add_child(b)
 	b.size=area.size
-	b.pressed.connect(func():audio.play_event("ui_press"))
+	if click_sound:b.pressed.connect(func():audio.play_event("ui_press"))
 	return b
 
 func _skip_reveal()->void:
@@ -590,10 +604,16 @@ func update_status()->void:
 	label_status.text="♥ %02d    　 %02d" % [maxi(game.hp,0),game.gold]
 	label_phase.text="WAVE %d/2  ·  %s" % [game.wave+1,"CONFIRM" if not restart_confirm.is_empty() else ("PAUSED" if paused else PHASES.get(game.phase,game.phase))]
 	var f:Dictionary=game.forecast()
+	label_forecast.add_theme_font_size_override("font_size",11 if f.has("guard_escort") else 12)
+	label_forecast.tooltip_text="Shellguards take one direct Brass/Mist hit for a nearby ally (within 1.2 tiles) every 1.2s, if both are in attack range. Hammer area attacks and secondary chains bypass." if f.has("guard_escort") else ""
 	if game.phase in ["won","lost"]:
 		label_forecast.text="Run complete • %d total leaks"%game.run_leaks
 	elif game.phase=="fight":
 		label_forecast.text="Approaching %d  •  Field %d\nDefeated %d  •  Leaks %d" % [game.pending,game.enemies.size(),game.kills,game.wave_leaks]
+		if f.has("guard_escort"):
+			var guards:Array=game.enemies.filter(func(e):return e.get("role","")=="guard" and e.hp>0.0)
+			var ready:int=guards.filter(func(e):return game.guard_ready(e)).size()
+			label_forecast.text+="\nEscort ready %d/%d  ·  Hammer bypass"%[ready,guards.size()]
 	else:
 		var roles:Dictionary=f.get("roles",{})
 		var role_hp:Dictionary=f.get("role_hp",{})
@@ -604,6 +624,15 @@ func update_status()->void:
 		label_forecast.text="NEXT  •  %s"%(" / ".join(parts))
 		if f.get("extra",0)>0: label_forecast.text+="\nExtra %d×%.0f HP"%[f.extra,f.extra_hp]
 		if game.stage==2 and game.wave==1:label_forecast.text+="\nBoss escape = defeat."
+		if f.has("guard_escort"):
+			# Four compact visible lines keep preparation controls below the notice clear.
+			var prefix="Hermit %d×%.0f · Sail %d×%.0f"%[roles.normal,role_hp.normal,roles.runner,role_hp.runner]
+			var second="Guard %d×%.0f"%[roles.guard,role_hp.guard]
+			if f.get("extra",0)>0:second+=" · Extra %d×%.0f"%[f.extra,f.extra_hp]
+			if f.get("boss",false):second+=" · Boss %d×%.0f"%[roles.boss,role_hp.boss]
+			var footer="1.2 tiles · Hammer bypass" if not f.get("boss",false) else "r1.2 · Hammer bypass · Boss escape=loss"
+			label_forecast.text=prefix+"\n"+second+"\nEscort: Brass/Mist 1 hit/1.2s\n"+footer
+	label_forecast.size=Vector2(231,79)
 
 func refresh()->void:
 	tutorial.observe(game)
@@ -618,7 +647,7 @@ func refresh()->void:
 	if t.is_empty():selected_id=-1;merge_mode=false;merge_hover_id=-1
 	var planning:bool=game.phase=="build"
 	update_status()
-	label_seed.text="P08 · Seed %d"%seed_value
+	label_seed.text="P09 · Seed %d"%seed_value
 	label_rule.text=Run.NAMES[game.stage].to_upper()
 	label_rule.tooltip_text=["Switch the tidal crossing.","Open second inlet: +6 if leak-free.","Echo reefs amplify your crew."][game.stage]
 	if game.stage==2 and game.wave==1:label_rule.tooltip_text="Boss escape = immediate defeat."
@@ -647,6 +676,9 @@ func refresh()->void:
 	cancel_button.text="CANCEL" if not restart_confirm.is_empty() or not sell_confirm.is_empty() else "CLEAR"
 	cancel_button.disabled=selected_id<0 and selected_core.is_empty() and sell_confirm.is_empty() and restart_confirm.is_empty()
 	label_selection.text=("%s\nRANK %d"%[SHORT_NAMES[t.kind],t.rank] if not t.is_empty() else "SELECT A CREW MEMBER")
+	order_button.disabled=not planning or t.is_empty() or game.available_orders(t.kind).size()<2
+	order_button.text=order_button_text(t)
+	order_button.tooltip_text=order_tooltip(t)
 	special_button.visible=game.stage<2
 	special_button.disabled=not planning
 	if game.stage==0:
@@ -656,6 +688,8 @@ func refresh()->void:
 		special_button.text="CLOSE RIFT" if game.opened else "OPEN RIFT +6"
 		special_button.tooltip_text="Optional second lane and stronger enemies; clear without leaks for +6 coins."
 	start_button.disabled=not planning or game.towers.is_empty()
+	report_button.visible=game.phase in ["won","lost"]
+	start_button.visible=not report_button.visible
 	start_button.tooltip_text="Deploy at least one crew member first." if planning and game.towers.is_empty() else "Begin the next wave."
 	start_button.text="DEPLOY CREW FIRST" if planning and game.towers.is_empty() else ("START WAVE" if planning else ("IN BATTLE" if game.phase=="fight" else "RUN COMPLETE"))
 	var explore_primary=planning and not explore_button.disabled and game.reserve.is_empty() and (game.towers.is_empty() or game.gold>=6)
@@ -697,6 +731,8 @@ func refresh()->void:
 	update_tutorial_hint(t)
 	sound_button.text="SOUND OFF" if audio.is_muted() else "SOUND ON"
 	sound_button.tooltip_text="Click to enable game sound." if audio.is_muted() else "Click to mute all game sound."
+	test_sound_button.disabled=audio.is_muted()
+	test_sound_button.tooltip_text="Enable sound first." if audio.is_muted() else "Retry audio and request a short test cue. Does not change gameplay."
 	label_reserve.text="FIELD %d/5 · %d/9"%[game.towers.size(),game.towers.size()+game.reserve.size()]
 	for i in range(9):
 		var b=reserve_buttons[i]
@@ -706,7 +742,7 @@ func refresh()->void:
 		else:
 			var r:Dictionary=game.reserve[i]
 			b.text="%s%s R%d"%[">" if r.id==selected_id else "",["Brass","Mist","Reef"][r.kind],r.rank]
-			b.tooltip_text="%s, rank %d. Click to select then click a legal tile."%[Run.TYPES[r.kind],r.rank]
+			b.tooltip_text="%s, rank %d, order %s. Click to select then click a legal tile."%[Run.TYPES[r.kind],r.rank,game.order_of(r).capitalize()]
 			b.icon=crew_icons[r.kind] if crew_icons.size()>r.kind else null
 			b.modulate=Color.WHITE
 			configure_button(b,ACC if r.id==selected_id or (merge_mode and can_merge(t,r)) else MUTED)
@@ -877,8 +913,65 @@ func draw_tutorial_focus()->void:
 		var rect=target.get_global_rect().grow(3)
 		draw_rect(rect,Color(ACC,0.62+0.18*sin(idle_clock*5.0)),false,2)
 
+func test_report()->String:
+	var roster:Array[String]=[]
+	for crew in game.towers+game.reserve:
+		roster.append("%s R%d (%s, %s)"%[SHORT_NAMES[crew.kind],crew.rank,game.order_of(crew),("field" if game.towers.has(crew) else "reserve")])
+	var relics:Array[String]=[]
+	for upgrade in Run.UPGRADES:
+		var rank:int=game.level(upgrade.id)
+		if rank>0:relics.append("%s R%d"%[upgrade.id,rank])
+	return "Riftworks P09 | seed %d | %s | stage %d wave %d | HP %d | gold %d | leaks %d | tick %d\nCrew: %s\nRelics: %s"%[seed_value,game.phase,game.stage+1,game.wave+1,game.hp,game.gold,game.run_leaks,game.tick_count,", ".join(roster),", ".join(relics)]
+
+func _copy_test_report()->void:
+	if game.phase not in ["won","lost"]:return
+	DisplayServer.clipboard_set(test_report())
+	notice="Copy requested. Paste into feedback; nothing sent."
+	refresh()
+
+func order_button_text(t:Dictionary)->String:
+	if t.is_empty():return "ORDER"
+	if game.available_orders(t.kind).size()<2:return "FRONT · FIXED"
+	var mode=game.order_of(t)
+	var next=game.available_orders(t.kind)[1] if mode=="front" else "front"
+	return "%s → %s"%[mode.to_upper(),next.to_upper()]
+
+func order_tooltip(t:Dictionary)->String:
+	if t.is_empty():return "Select a crew member to inspect or change its targeting order."
+	if game.available_orders(t.kind).size()<2:return "Front: nearest exit in range. Brass has no alternate order. A ready in-range Shellguard may intercept a direct hit."
+	var alternate=game.available_orders(t.kind)[1]
+	var explanation={"screen":"Screen: choose a currently unslowed intended target within range when available. A ready in-range Shellguard may intercept the Mist hit.","cluster":"Cluster: prefer most other live splash victims on a current hit."}[alternate]
+	return "Current "+game.order_of(t).capitalize()+". Click to switch (free, preparation only). Front: nearest exit in range. "+explanation+" Alternate may leave nearest enemies. Alternate ties use nearest exit then spawn ID."
+
+func _toggle_order()->void:
+	restart_confirm=""
+	sell_confirm=""
+	_cancel_pointer()
+	_skip_reveal()
+	var t=get_tower(selected_id)
+	if t.is_empty() or game.phase!="build" or game.available_orders(t.kind).size()<2:
+		notice="Alternate orders are available for Mist and Reef during preparation."
+		audio.play_event("ui_reject")
+		refresh()
+		return
+	merge_mode=false
+	merge_hover_id=-1
+	var next=game.available_orders(t.kind)[1] if game.order_of(t)=="front" else "front"
+	if game.set_order(t.id,next):
+		notice={"front":"Order: FRONT · nearest exit.","screen":"Order: SCREEN · aims at unslowed; may be intercepted.","cluster":"Order: CLUSTER · most live splash targets; may leave nearest."}[next]
+		tutorial.accepted_action("mechanic")
+	else:
+		notice="Order change unavailable."
+		audio.play_event("ui_reject")
+	refresh()
+
 func _toggle_sound()->void:
 	audio.set_muted(not audio.is_muted())
+	refresh()
+
+func _test_sound()->void:
+	if audio.is_muted():return
+	notice="Test cue requested. Listen for a short sound." if audio.test_sound() else "Test cue unavailable. Try enabling sound."
 	refresh()
 
 func _alter_route()->void:
@@ -904,12 +997,12 @@ func update_hover()->void:
 	if viewed.is_empty():
 		label_tower_stats.text="Recruit from chest.\nSelect to inspect."
 	else:
-		label_tower_stats.text="ATK  %.1f\nCD  %.2fs\nRANGE  %.1f"%[st[0],st[2],st[1]]
+		label_tower_stats.text="ATK %.1f · CD %.2fs\nRANGE %.1f"%[st[0],st[2],st[1]]
 		label_tower_stats.tooltip_text="AMP + RELAY" if st[4] and st[5] else ("AMP" if st[4] else ("RELAY" if st[5] else ROLE[viewed.kind]))
 	label_feedback.add_theme_color_override("font_color",MUTED)
 	if not notice.is_empty():
 		label_feedback.text=notice
-		label_feedback.add_theme_color_override("font_color",ACC if notice.begins_with("Route now") or notice.begins_with("Rift now") or notice.begins_with("Cancelled") else WARN)
+		label_feedback.add_theme_color_override("font_color",ACC if notice.begins_with("Route now") or notice.begins_with("Rift now") or notice.begins_with("Cancelled") or notice.begins_with("Order:") or notice.begins_with("Copy requested") or notice.begins_with("Test cue requested") else WARN)
 	elif merge_mode:
 		var old_stats:Array=game.stats(t)
 		var merged_stats:Array=game.preview_stats(t.cell,t.kind,t.rank+1,t.id)
@@ -1402,6 +1495,7 @@ func _draw()->void:
 		var sprite_id:String=ENEMY_SPRITES.get(d.role,"crab")
 		draw_character(sprite_id,"death",p,character_scale(sprite_id)*readability.death_scale(d),d.age,d.direction.x<0)
 	atmosphere.draw_combat(self,game,ORIGIN,TILE)
+	atmosphere.draw_guard_status(self,game,visual_layout)
 	readability.draw_health(self,game,visual_layout)
 	atmosphere.draw_alert(self,game,ORIGIN,TILE,font)
 	if game.phase=="build" and inside(hover) and not merge_mode and tower_at(hover).is_empty():

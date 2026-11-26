@@ -32,6 +32,10 @@ const CONDUCTIVE_DAMAGE=1.20
 const SHATTER_RADIUS=0.35
 const SHATTER_SPLASH=1.10
 const TIDE_SHARE=0.5
+# Production active. Isolated experiment copies may substitute false, never a player toggle.
+const GUARD_ESCORT_ENABLED=true
+const GUARD_INTERCEPT_RADIUS=1.2
+const GUARD_INTERCEPT_TICKS=24
 const UPGRADES=[
 	{"id":"power","name":"Overcharge","description":"All towers deal 35% more base damage."},
 	{"id":"rapid","name":"Rapid cycle","description":"All towers recharge 25% faster."},
@@ -59,6 +63,8 @@ var upgrades:Dictionary={}
 var shots:Array=[]
 var deaths:Array=[]
 var tide_transfers:Array=[]
+# Presentation data are read-only event snapshots, never an extra damage source.
+var guard_intercepts:Array=[]
 var tick_count=0
 var pending=0
 var pending_main=0
@@ -77,7 +83,7 @@ var last_loot:Dictionary={}
 func reset(seed_value:int=437) -> void:
 	rng.seed=seed_value
 	stage=0; wave=0; hp=15; gold=24; phase="build"; route_choice=0; opened=false
-	towers.clear(); reserve.clear(); next_tower_id=1; enemies.clear(); upgrades.clear(); shots.clear(); deaths.clear(); tide_transfers.clear()
+	towers.clear(); reserve.clear(); next_tower_id=1; enemies.clear(); upgrades.clear(); shots.clear(); deaths.clear(); tide_transfers.clear(); guard_intercepts.clear()
 	tick_count=0; pending=0; pending_main=0; pending_extra=0; spawn_time=0; spawn_count=0
 	kills=0; wave_leaks=0; run_leaks=0; wave_damage=0; boss_defeated=false
 	message="Build a defense, then start the wave."
@@ -201,6 +207,58 @@ func draw_loot()->Dictionary:
 	changed.emit()
 	return loot
 
+func available_orders(kind:int)->Array[String]:
+	if kind<0 or kind>=TYPES.size():return []
+	if kind==0:return ["front"]
+	return ["front","screen" if kind==1 else "cluster"]
+
+func order_of(t:Dictionary)->String:
+	var mode=str(t.get("order","front"))
+	return mode if mode in available_orders(int(t.kind)) else "front"
+
+func set_order(id:int,mode:String)->bool:
+	if phase!="build":return false
+	var t=_find_tower(id)
+	if t.is_empty() or mode not in available_orders(t.kind):return false
+	if order_of(t)==mode:return true
+	if mode=="front":t.erase("order")
+	else:t.order=mode
+	message="Order set: %s."%mode.capitalize()
+	changed.emit()
+	return true
+
+# Alternate targeting is purely an order, not an extra attack or modified formula.
+func _cluster_score(target:Dictionary,rank:int)->int:
+	var radius=1.0+0.4*level("blast")+0.2*(rank-1)+(SHATTER_RADIUS if target.slow>0.0 else 0.0)
+	var score=0
+	for e in enemies:
+		if int(e.id)!=int(target.id) and e.hp>0 and e.pos.distance_to(target.pos)<=radius:score+=1
+	return score
+
+func choose_target(t:Dictionary,radius:float)->Dictionary:
+	var mode=order_of(t)
+	var target:Dictionary={}
+	var best=INF
+	var best_score=-INF
+	for e in enemies:
+		if e.hp<=0 or Vector2(t.cell).distance_to(e.pos)>radius:continue
+		var distance=remaining_distance(e)
+		if mode=="front":
+			# Preserve old array-order tie exactly, including the absence of any new RNG.
+			if distance<best:
+				best=distance;target=e
+			continue
+		var score:float=0.0
+		match mode:
+			"screen":score=1.0 if e.slow<=0.0 else 0.0
+			"cluster":score=float(_cluster_score(e,t.rank))
+			_: # Invalid order cannot be assigned; defensive fallback preserves front.
+				if distance<best:best=distance;target=e
+				continue
+		if target.is_empty() or score>best_score or (score==best_score and (distance<best or (distance==best and int(e.id)<int(target.id)))):
+			best_score=score;best=distance;target=e
+	return target
+
 func deploy(id:int,cell:Vector2i)->bool:
 	var t=_find_tower(id)
 	if t.is_empty() or not placement_error(cell,t.kind,id).is_empty(): return false
@@ -270,7 +328,9 @@ func forecast()->Dictionary:
 		var role=_role_for_main(i,main)
 		counts[role]+=1
 	var role_hp={"normal":WAVE_HP[stage*2+wave], "runner":WAVE_HP[stage*2+wave]*ROLE_HP.runner,"guard":WAVE_HP[stage*2+wave]*ROLE_HP.guard,"boss":BOSS_HP}
-	return {"main":main,"extra":extra,"total":main+extra,"boss":stage==2 and wave==1,"hp":WAVE_HP[stage*2+wave],"boss_hp":BOSS_HP,"extra_hp":WAVE_HP[stage*2+wave]*RIFT_HP_MULTIPLIER,"roles":counts,"role_hp":role_hp}
+	var result={"main":main,"extra":extra,"total":main+extra,"boss":stage==2 and wave==1,"hp":WAVE_HP[stage*2+wave],"boss_hp":BOSS_HP,"extra_hp":WAVE_HP[stage*2+wave]*RIFT_HP_MULTIPLIER,"roles":counts,"role_hp":role_hp}
+	if GUARD_ESCORT_ENABLED and counts.guard>0:result["guard_escort"]={"radius":GUARD_INTERCEPT_RADIUS,"cooldown_ticks":GUARD_INTERCEPT_TICKS,"cooldown_seconds":GUARD_INTERCEPT_TICKS*TICK}
+	return result
 
 func start() -> bool:
 	if phase!="build" or towers.is_empty(): return false
@@ -279,7 +339,7 @@ func start() -> bool:
 	spawn_time=0; spawn_count=0; kills=0; wave_leaks=0; wave_damage=0
 	# Equal cooldown on every new wave means timing is a function of this wave's decisions.
 	for t in towers: t.cool=0.0
-	shots.clear(); deaths.clear(); tide_transfers.clear()
+	shots.clear(); deaths.clear(); tide_transfers.clear(); guard_intercepts.clear()
 	message="Defend the core!"; changed.emit(); return true
 
 func level(id:String) -> int: return upgrades.get(id,0)
@@ -465,11 +525,34 @@ func _spread_tide(donor:Dictionary,pre_slow:float,victims:Array,tower_id:int)->v
 		tide_transfers.append({"from":donor.pos,"to":recipient.pos,"duration":share,"tick":tick_count,"tower_id":tower_id,"donor_id":donor.id,"recipient_id":recipient.id})
 	donor.slow=maxf(0.0,float(donor.slow)-sent)
 
+# Guard escorts only a direct non-Boss, non-guard target, not a splash/chain member.
+# Missing ready_tick means newly spawned and ready. No added field before an actual intercept.
+func guard_ready(e:Dictionary)->bool:
+	return GUARD_ESCORT_ENABLED and e.get("role", "normal")=="guard" and not e.get("boss",false) and e.hp>0.0 and int(e.get("intercept_ready_tick",0))<=tick_count
+
+func guard_remaining_ticks(e:Dictionary)->int:
+	return maxi(0,int(e.get("intercept_ready_tick",0))-tick_count) if GUARD_ESCORT_ENABLED and e.get("role","")=="guard" else 0
+
+func _escort_for(intended:Dictionary,attacker:Dictionary,attack_range:float)->Dictionary:
+	if not GUARD_ESCORT_ENABLED or attacker.kind not in [0,1] or intended.is_empty() or intended.hp<=0.0 or intended.get("boss",false) or intended.get("role","normal") in ["guard","boss"]:return {}
+	var best:Dictionary={}
+	var best_distance:float=INF
+	var best_remaining:float=INF
+	for e in enemies:
+		if not guard_ready(e):continue
+		var distance:float=e.pos.distance_to(intended.pos)
+		if distance>GUARD_INTERCEPT_RADIUS or Vector2(attacker.cell).distance_to(e.pos)>attack_range:continue
+		var remaining:float=remaining_distance(e)
+		if best.is_empty() or distance<best_distance or (distance==best_distance and (remaining<best_remaining or (remaining==best_remaining and int(e.id)<int(best.id)))):
+			best=e;best_distance=distance;best_remaining=remaining
+	return best
+
 func step() -> void:
 	if phase!="fight":return
 	tick_count+=1
 	while not deaths.is_empty() and tick_count-int(deaths[0].tick)>10: deaths.pop_front()
 	while not tide_transfers.is_empty() and tick_count-int(tide_transfers[0].tick)>10: tide_transfers.pop_front()
+	while not guard_intercepts.is_empty() and tick_count-int(guard_intercepts[0].tick)>10:guard_intercepts.pop_front()
 	spawn_time-=TICK
 	if pending>0 and spawn_time<=0:
 		spawn(); pending-=1; spawn_time=0.48
@@ -498,19 +581,24 @@ func step() -> void:
 	for t in towers:
 		t.cool-=TICK
 		if t.cool>0: continue
-		var st=stats(t); var target:Dictionary={}; var best=INF
-		for e in enemies:
-			if e.hp>0 and Vector2(t.cell).distance_to(e.pos)<=st[1]:
-				var distance=remaining_distance(e)
-				if distance<best: best=distance; target=e
+		var st=stats(t); var target:Dictionary=choose_target(t,st[1])
 		if target.is_empty():continue
 		t.cool=st[2]
 		t.attack_tick=tick_count
+		var intended:Dictionary=target
+		var escort:Dictionary=_escort_for(intended,t,float(st[1]))
+		if not escort.is_empty():
+			target=escort
+			target.intercept_ready_tick=tick_count+GUARD_INTERCEPT_TICKS
 		var pre_slow:float=target.slow
 		var marked:bool=pre_slow>0.0
 		var bonus:float=CONDUCTIVE_DAMAGE if t.kind==0 and marked else 1.0
 		var synergy:String="conductive" if t.kind==0 and marked else ("shatter" if t.kind==2 and marked else "")
-		damage_enemy(target,st[0]*bonus*(1.0+0.3*level("focus") if target.hp<target.maxhp*0.5 else 1.0))
+		var direct_damage:float=st[0]*bonus*(1.0+0.3*level("focus") if target.hp<target.maxhp*0.5 else 1.0)
+		var effective_direct_damage:float=minf(direct_damage,maxf(0.0,float(target.hp)))
+		damage_enemy(target,direct_damage)
+		if not escort.is_empty():
+			guard_intercepts.append({"tick":tick_count,"tower_id":t.id,"intended_id":intended.id,"guard_id":target.id,"from":intended.pos,"to":target.pos,"attacker_pos":Vector2(t.cell),"damage":effective_direct_damage,"ready_tick":target.intercept_ready_tick})
 		shots.append({"from":Vector2(t.cell),"to":target.pos,"kind":t.kind,"tower_id":t.id,"synergy":synergy,"life":0.16})
 		if t.kind==1:
 			target.slow=0.8+level("freeze")*0.6+0.25*(t.rank-1)

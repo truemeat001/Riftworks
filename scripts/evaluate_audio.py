@@ -72,10 +72,12 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1])
     p.add_argument('--output',type=Path)
+    p.add_argument('--manifest',type=Path,help='Optional version manifest; default preserved P07 baseline')
     p.add_argument('--baseline',type=Path,help='Prior CSV to flag descriptive changes; no auto subjective judgement')
     p.add_argument('--mixed',type=Path,action='append',default=[],help='Optional actual engine recorded mix; evaluated separately')
     a=p.parse_args();root=a.root.resolve();out=a.output or root/'docs/audio-quantitative-p07.csv'
-    manifest=json.loads((root/'docs/audio-p07-manifest.json').read_text())
+    manifest_path=a.manifest or root/'docs/audio-p07-manifest.json'
+    manifest=json.loads(manifest_path.read_text())
     rows=[]; failures=[];warnings=[];groups=defaultdict(list)
     for item in manifest:
         path=root/item['runtime']; m=metrics(path,item['loop'])
