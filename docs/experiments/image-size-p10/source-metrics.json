@@ -1,0 +1,232 @@
+[
+  {
+    "path": "art-sources/chest-pair-original-with-haze.png",
+    "size": [
+      2172,
+      724
+    ],
+    "file_bytes": 2870927,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources/chest-pair.png",
+    "size": [
+      2172,
+      724
+    ],
+    "file_bytes": 1291835,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources/concept-seven.png",
+    "size": [
+      2172,
+      724
+    ],
+    "file_bytes": 1796055,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources/crew-poses.png",
+    "size": [
+      1448,
+      1086
+    ],
+    "file_bytes": 1630314,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources/enemy-damage.png",
+    "size": [
+      1086,
+      1448
+    ],
+    "file_bytes": 1926501,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources/enemy-walk-original-with-guide.png",
+    "size": [
+      1199,
+      1312
+    ],
+    "file_bytes": 2055791,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources/enemy-walk.png",
+    "size": [
+      1199,
+      1312
+    ],
+    "file_bytes": 2123283,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources-p05/crew-original-with-haze.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "file_bytes": 2493494,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources-p05/crew-portraits.png",
+    "size": [
+      2172,
+      724
+    ],
+    "file_bytes": 2703386,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources-p05/crew-poses.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "file_bytes": 2303808,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources-p05/enemy-damage.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "file_bytes": 2172364,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "art-sources-p05/enemy-walk.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "file_bytes": 2212170,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "character-attack-preview.png",
+    "size": [
+      1050,
+      145
+    ],
+    "file_bytes": 82201,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "character-idle-preview.png",
+    "size": [
+      1050,
+      145
+    ],
+    "file_bytes": 84751,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "character-motion-preview.gif",
+    "size": [
+      1050,
+      145
+    ],
+    "file_bytes": 621526,
+    "frames": 17,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "p07-art-evidence/loop-contact-1280.png",
+    "size": [
+      1050,
+      306
+    ],
+    "file_bytes": 137909,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "p07-art-evidence/loop-contact-960.png",
+    "size": [
+      788,
+      230
+    ],
+    "file_bytes": 81442,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "p07-art-evidence/loop-three-cycles-1280.gif",
+    "size": [
+      1050,
+      306
+    ],
+    "file_bytes": 727623,
+    "frames": 12,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "p07-art-evidence/loop-three-cycles-960.gif",
+    "size": [
+      788,
+      230
+    ],
+    "file_bytes": 431128,
+    "frames": 12,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "p07-art-evidence/nonloop-contact-1280.png",
+    "size": [
+      1704,
+      1562
+    ],
+    "file_bytes": 558260,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "p07-art-evidence/nonloop-contact-960.png",
+    "size": [
+      1272,
+      1166
+    ],
+    "file_bytes": 336097,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "p08-readability-evidence/actual-sample-comparison-1280.png",
+    "size": [
+      1016,
+      1316
+    ],
+    "file_bytes": 2151309,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  },
+  {
+    "path": "p08-readability-evidence/actual-sample-comparison-960.png",
+    "size": [
+      762,
+      1002
+    ],
+    "file_bytes": 1257621,
+    "frames": 1,
+    "role": "original/reference/QA evidence; excluded from runtime"
+  }
+]

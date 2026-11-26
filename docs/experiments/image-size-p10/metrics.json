@@ -1,0 +1,317 @@
+[
+  {
+    "path": "characters/atlas.png",
+    "source": [
+      2048,
+      2006
+    ],
+    "display": [
+      0,
+      0
+    ],
+    "file_bytes": 4410604,
+    "rgba8_bytes": 16433152,
+    "linear_ratio": null,
+    "recommendation": "exact atlas dedup; not arbitrary whole-sheet rescale"
+  },
+  {
+    "path": "characters/concept-lineup.png",
+    "source": [
+      1568,
+      240
+    ],
+    "display": [
+      0,
+      0
+    ],
+    "file_bytes": 246286,
+    "rgba8_bytes": 1505280,
+    "linear_ratio": null,
+    "recommendation": "unused concept reference; exclude from runtime only"
+  },
+  {
+    "path": "characters/portraits/burst.png",
+    "source": [
+      256,
+      256
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 128233,
+    "rgba8_bytes": 262144,
+    "linear_ratio": 2.42,
+    "recommendation": "candidate 208x208; largest loot reveal not reserve icon"
+  },
+  {
+    "path": "characters/portraits/frost.png",
+    "source": [
+      256,
+      256
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 117446,
+    "rgba8_bytes": 262144,
+    "linear_ratio": 2.42,
+    "recommendation": "candidate 208x208; largest loot reveal not reserve icon"
+  },
+  {
+    "path": "characters/portraits/pulse.png",
+    "source": [
+      256,
+      256
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 124965,
+    "rgba8_bytes": 262144,
+    "linear_ratio": 2.42,
+    "recommendation": "candidate 208x208; largest loot reveal not reserve icon"
+  },
+  {
+    "path": "environment/deployment_pad.png",
+    "source": [
+      264,
+      191
+    ],
+    "display": [
+      70,
+      51
+    ],
+    "file_bytes": 68722,
+    "rgba8_bytes": 201696,
+    "linear_ratio": 3.77,
+    "recommendation": "candidate 140x102"
+  },
+  {
+    "path": "environment/echoreef_background.png",
+    "source": [
+      1585,
+      992
+    ],
+    "display": [
+      1016,
+      630
+    ],
+    "file_bytes": 2703399,
+    "rgba8_bytes": 6289280,
+    "linear_ratio": 1.57,
+    "recommendation": "candidate 1280x800 or 1024x640, compare WebP with PNG lossless/quality"
+  },
+  {
+    "path": "environment/lighthouse.png",
+    "source": [
+      202,
+      392
+    ],
+    "display": [
+      59,
+      114
+    ],
+    "file_bytes": 105157,
+    "rgba8_bytes": 316736,
+    "linear_ratio": 3.44,
+    "recommendation": "candidate 118x228"
+  },
+  {
+    "path": "environment/portal.png",
+    "source": [
+      392,
+      358
+    ],
+    "display": [
+      104,
+      95
+    ],
+    "file_bytes": 210986,
+    "rgba8_bytes": 561344,
+    "linear_ratio": 3.77,
+    "recommendation": "candidate 208x190"
+  },
+  {
+    "path": "environment/tidecross_background.png",
+    "source": [
+      1585,
+      992
+    ],
+    "display": [
+      1016,
+      630
+    ],
+    "file_bytes": 2828382,
+    "rgba8_bytes": 6289280,
+    "linear_ratio": 1.57,
+    "recommendation": "candidate 1280x800 or 1024x640, compare WebP with PNG lossless/quality"
+  },
+  {
+    "path": "environment/twintide_background.png",
+    "source": [
+      1585,
+      992
+    ],
+    "display": [
+      1016,
+      630
+    ],
+    "file_bytes": 2622429,
+    "rgba8_bytes": 6289280,
+    "linear_ratio": 1.57,
+    "recommendation": "candidate 1280x800 or 1024x640, compare WebP with PNG lossless/quality"
+  },
+  {
+    "path": "items/chest_closed.png",
+    "source": [
+      512,
+      512
+    ],
+    "display": [
+      160,
+      160
+    ],
+    "file_bytes": 286587,
+    "rgba8_bytes": 1048576,
+    "linear_ratio": 3.2,
+    "recommendation": "candidate 320x320"
+  },
+  {
+    "path": "items/chest_open.png",
+    "source": [
+      512,
+      512
+    ],
+    "display": [
+      160,
+      160
+    ],
+    "file_bytes": 330317,
+    "rgba8_bytes": 1048576,
+    "linear_ratio": 3.2,
+    "recommendation": "candidate 320x320"
+  },
+  {
+    "path": "items/relics/blast.png",
+    "source": [
+      128,
+      128
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 23564,
+    "rgba8_bytes": 65536,
+    "linear_ratio": 1.21,
+    "recommendation": "128x128 keep; loot reveal larger than 21px button"
+  },
+  {
+    "path": "items/relics/chain.png",
+    "source": [
+      128,
+      128
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 26446,
+    "rgba8_bytes": 65536,
+    "linear_ratio": 1.21,
+    "recommendation": "128x128 keep; loot reveal larger than 21px button"
+  },
+  {
+    "path": "items/relics/focus.png",
+    "source": [
+      128,
+      128
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 27254,
+    "rgba8_bytes": 65536,
+    "linear_ratio": 1.21,
+    "recommendation": "128x128 keep; loot reveal larger than 21px button"
+  },
+  {
+    "path": "items/relics/freeze.png",
+    "source": [
+      128,
+      128
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 22126,
+    "rgba8_bytes": 65536,
+    "linear_ratio": 1.21,
+    "recommendation": "128x128 keep; loot reveal larger than 21px button"
+  },
+  {
+    "path": "items/relics/power.png",
+    "source": [
+      128,
+      128
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 21060,
+    "rgba8_bytes": 65536,
+    "linear_ratio": 1.21,
+    "recommendation": "128x128 keep; loot reveal larger than 21px button"
+  },
+  {
+    "path": "items/relics/range.png",
+    "source": [
+      128,
+      128
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 23384,
+    "rgba8_bytes": 65536,
+    "linear_ratio": 1.21,
+    "recommendation": "128x128 keep; loot reveal larger than 21px button"
+  },
+  {
+    "path": "items/relics/rapid.png",
+    "source": [
+      128,
+      128
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 25231,
+    "rgba8_bytes": 65536,
+    "linear_ratio": 1.21,
+    "recommendation": "128x128 keep; loot reveal larger than 21px button"
+  },
+  {
+    "path": "items/relics/relay.png",
+    "source": [
+      128,
+      128
+    ],
+    "display": [
+      106,
+      106
+    ],
+    "file_bytes": 25890,
+    "rgba8_bytes": 65536,
+    "linear_ratio": 1.21,
+    "recommendation": "128x128 keep; loot reveal larger than 21px button"
+  }
+]
