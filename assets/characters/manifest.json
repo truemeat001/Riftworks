@@ -1,0 +1,2675 @@
+{
+  "version": 2,
+  "authoring_size": [
+    192,
+    192
+  ],
+  "anchor": [
+    96,
+    148
+  ],
+  "padding": 1,
+  "source": "Original ImageGen authored keyframe sheets, fixed per-role source-scale and alpha-preserving frame packing; no P03/NGame imagery.",
+  "states": {
+    "idle": {
+      "fps": 4,
+      "loop": true
+    },
+    "idle_left": {
+      "fps": 4,
+      "loop": true
+    },
+    "attack": {
+      "fps": 18,
+      "loop": false
+    },
+    "attack_left": {
+      "fps": 18,
+      "loop": false
+    },
+    "run": {
+      "fps": 8,
+      "loop": true
+    },
+    "run_left": {
+      "fps": 8,
+      "loop": true
+    },
+    "hurt": {
+      "fps": 12,
+      "loop": false
+    },
+    "hurt_left": {
+      "fps": 12,
+      "loop": false
+    },
+    "death": {
+      "fps": 9,
+      "loop": false
+    },
+    "death_left": {
+      "fps": 9,
+      "loop": false
+    }
+  },
+  "characters": {
+    "pulse": {
+      "idle": [
+        {
+          "rect": [
+            1,
+            1,
+            57,
+            93
+          ],
+          "offset": [
+            -26,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            60,
+            1,
+            57,
+            92
+          ],
+          "offset": [
+            -26,
+            -91
+          ]
+        }
+      ],
+      "idle_left": [
+        {
+          "rect": [
+            119,
+            1,
+            57,
+            93
+          ],
+          "offset": [
+            -31,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            178,
+            1,
+            57,
+            92
+          ],
+          "offset": [
+            -31,
+            -91
+          ]
+        }
+      ],
+      "attack": [
+        {
+          "rect": [
+            237,
+            1,
+            57,
+            93
+          ],
+          "offset": [
+            -26,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            296,
+            1,
+            53,
+            91
+          ],
+          "offset": [
+            -24,
+            -90
+          ]
+        },
+        {
+          "rect": [
+            351,
+            1,
+            53,
+            91
+          ],
+          "offset": [
+            -24,
+            -90
+          ]
+        },
+        {
+          "rect": [
+            406,
+            1,
+            86,
+            88
+          ],
+          "offset": [
+            -28,
+            -87
+          ]
+        },
+        {
+          "rect": [
+            494,
+            1,
+            57,
+            92
+          ],
+          "offset": [
+            -26,
+            -91
+          ]
+        },
+        {
+          "rect": [
+            553,
+            1,
+            57,
+            93
+          ],
+          "offset": [
+            -26,
+            -92
+          ]
+        }
+      ],
+      "attack_left": [
+        {
+          "rect": [
+            612,
+            1,
+            57,
+            93
+          ],
+          "offset": [
+            -31,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            671,
+            1,
+            53,
+            91
+          ],
+          "offset": [
+            -29,
+            -90
+          ]
+        },
+        {
+          "rect": [
+            726,
+            1,
+            53,
+            91
+          ],
+          "offset": [
+            -29,
+            -90
+          ]
+        },
+        {
+          "rect": [
+            781,
+            1,
+            86,
+            88
+          ],
+          "offset": [
+            -58,
+            -87
+          ]
+        },
+        {
+          "rect": [
+            869,
+            1,
+            57,
+            92
+          ],
+          "offset": [
+            -31,
+            -91
+          ]
+        },
+        {
+          "rect": [
+            928,
+            1,
+            57,
+            93
+          ],
+          "offset": [
+            -31,
+            -92
+          ]
+        }
+      ]
+    },
+    "frost": {
+      "idle": [
+        {
+          "rect": [
+            1,
+            96,
+            60,
+            93
+          ],
+          "offset": [
+            -29,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            63,
+            96,
+            62,
+            93
+          ],
+          "offset": [
+            -29,
+            -92
+          ]
+        }
+      ],
+      "idle_left": [
+        {
+          "rect": [
+            127,
+            96,
+            60,
+            93
+          ],
+          "offset": [
+            -31,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            189,
+            96,
+            62,
+            93
+          ],
+          "offset": [
+            -33,
+            -92
+          ]
+        }
+      ],
+      "attack": [
+        {
+          "rect": [
+            253,
+            96,
+            60,
+            93
+          ],
+          "offset": [
+            -29,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            315,
+            96,
+            65,
+            90
+          ],
+          "offset": [
+            -32,
+            -89
+          ]
+        },
+        {
+          "rect": [
+            382,
+            96,
+            65,
+            90
+          ],
+          "offset": [
+            -32,
+            -89
+          ]
+        },
+        {
+          "rect": [
+            449,
+            96,
+            98,
+            90
+          ],
+          "offset": [
+            -32,
+            -89
+          ]
+        },
+        {
+          "rect": [
+            549,
+            96,
+            62,
+            93
+          ],
+          "offset": [
+            -29,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            613,
+            96,
+            60,
+            93
+          ],
+          "offset": [
+            -29,
+            -92
+          ]
+        }
+      ],
+      "attack_left": [
+        {
+          "rect": [
+            675,
+            96,
+            60,
+            93
+          ],
+          "offset": [
+            -31,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            737,
+            96,
+            65,
+            90
+          ],
+          "offset": [
+            -33,
+            -89
+          ]
+        },
+        {
+          "rect": [
+            804,
+            96,
+            65,
+            90
+          ],
+          "offset": [
+            -33,
+            -89
+          ]
+        },
+        {
+          "rect": [
+            871,
+            96,
+            98,
+            90
+          ],
+          "offset": [
+            -66,
+            -89
+          ]
+        },
+        {
+          "rect": [
+            1,
+            191,
+            62,
+            93
+          ],
+          "offset": [
+            -33,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            65,
+            191,
+            60,
+            93
+          ],
+          "offset": [
+            -31,
+            -92
+          ]
+        }
+      ]
+    },
+    "burst": {
+      "idle": [
+        {
+          "rect": [
+            127,
+            191,
+            67,
+            93
+          ],
+          "offset": [
+            -32,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            196,
+            191,
+            69,
+            93
+          ],
+          "offset": [
+            -32,
+            -92
+          ]
+        }
+      ],
+      "idle_left": [
+        {
+          "rect": [
+            267,
+            191,
+            67,
+            93
+          ],
+          "offset": [
+            -35,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            336,
+            191,
+            69,
+            93
+          ],
+          "offset": [
+            -37,
+            -92
+          ]
+        }
+      ],
+      "attack": [
+        {
+          "rect": [
+            407,
+            191,
+            67,
+            93
+          ],
+          "offset": [
+            -32,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            476,
+            191,
+            92,
+            91
+          ],
+          "offset": [
+            -52,
+            -90
+          ]
+        },
+        {
+          "rect": [
+            570,
+            191,
+            92,
+            91
+          ],
+          "offset": [
+            -52,
+            -90
+          ]
+        },
+        {
+          "rect": [
+            664,
+            191,
+            91,
+            83
+          ],
+          "offset": [
+            -46,
+            -82
+          ]
+        },
+        {
+          "rect": [
+            757,
+            191,
+            69,
+            93
+          ],
+          "offset": [
+            -32,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            828,
+            191,
+            67,
+            93
+          ],
+          "offset": [
+            -32,
+            -92
+          ]
+        }
+      ],
+      "attack_left": [
+        {
+          "rect": [
+            897,
+            191,
+            67,
+            93
+          ],
+          "offset": [
+            -35,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            1,
+            286,
+            92,
+            91
+          ],
+          "offset": [
+            -40,
+            -90
+          ]
+        },
+        {
+          "rect": [
+            95,
+            286,
+            92,
+            91
+          ],
+          "offset": [
+            -40,
+            -90
+          ]
+        },
+        {
+          "rect": [
+            189,
+            286,
+            91,
+            83
+          ],
+          "offset": [
+            -45,
+            -82
+          ]
+        },
+        {
+          "rect": [
+            282,
+            286,
+            69,
+            93
+          ],
+          "offset": [
+            -37,
+            -92
+          ]
+        },
+        {
+          "rect": [
+            353,
+            286,
+            67,
+            93
+          ],
+          "offset": [
+            -35,
+            -92
+          ]
+        }
+      ]
+    },
+    "crab": {
+      "idle": [
+        {
+          "rect": [
+            422,
+            286,
+            89,
+            85
+          ],
+          "offset": [
+            -44,
+            -84
+          ]
+        }
+      ],
+      "idle_left": [
+        {
+          "rect": [
+            513,
+            286,
+            89,
+            85
+          ],
+          "offset": [
+            -45,
+            -84
+          ]
+        }
+      ],
+      "run": [
+        {
+          "rect": [
+            604,
+            286,
+            89,
+            85
+          ],
+          "offset": [
+            -44,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            695,
+            286,
+            83,
+            85
+          ],
+          "offset": [
+            -38,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            780,
+            286,
+            85,
+            84
+          ],
+          "offset": [
+            -42,
+            -83
+          ]
+        },
+        {
+          "rect": [
+            867,
+            286,
+            82,
+            87
+          ],
+          "offset": [
+            -30,
+            -86
+          ]
+        }
+      ],
+      "run_left": [
+        {
+          "rect": [
+            1,
+            381,
+            89,
+            85
+          ],
+          "offset": [
+            -45,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            92,
+            381,
+            83,
+            85
+          ],
+          "offset": [
+            -45,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            177,
+            381,
+            85,
+            84
+          ],
+          "offset": [
+            -43,
+            -83
+          ]
+        },
+        {
+          "rect": [
+            264,
+            381,
+            82,
+            87
+          ],
+          "offset": [
+            -52,
+            -86
+          ]
+        }
+      ],
+      "hurt": [
+        {
+          "rect": [
+            348,
+            381,
+            89,
+            85
+          ],
+          "offset": [
+            -31,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            439,
+            381,
+            89,
+            85
+          ],
+          "offset": [
+            -44,
+            -84
+          ]
+        }
+      ],
+      "hurt_left": [
+        {
+          "rect": [
+            530,
+            381,
+            89,
+            85
+          ],
+          "offset": [
+            -58,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            621,
+            381,
+            89,
+            85
+          ],
+          "offset": [
+            -45,
+            -84
+          ]
+        }
+      ],
+      "death": [
+        {
+          "rect": [
+            712,
+            381,
+            89,
+            85
+          ],
+          "offset": [
+            -31,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            803,
+            381,
+            94,
+            78
+          ],
+          "offset": [
+            -40,
+            -77
+          ]
+        },
+        {
+          "rect": [
+            899,
+            381,
+            94,
+            78
+          ],
+          "offset": [
+            -40,
+            -77
+          ]
+        },
+        {
+          "rect": [
+            1,
+            470,
+            102,
+            66
+          ],
+          "offset": [
+            -41,
+            -65
+          ]
+        }
+      ],
+      "death_left": [
+        {
+          "rect": [
+            105,
+            470,
+            89,
+            85
+          ],
+          "offset": [
+            -58,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            196,
+            470,
+            94,
+            78
+          ],
+          "offset": [
+            -54,
+            -77
+          ]
+        },
+        {
+          "rect": [
+            292,
+            470,
+            94,
+            78
+          ],
+          "offset": [
+            -54,
+            -77
+          ]
+        },
+        {
+          "rect": [
+            388,
+            470,
+            102,
+            66
+          ],
+          "offset": [
+            -61,
+            -65
+          ]
+        }
+      ]
+    },
+    "sail": {
+      "idle": [
+        {
+          "rect": [
+            492,
+            470,
+            103,
+            86
+          ],
+          "offset": [
+            -54,
+            -85
+          ]
+        }
+      ],
+      "idle_left": [
+        {
+          "rect": [
+            597,
+            470,
+            103,
+            86
+          ],
+          "offset": [
+            -49,
+            -85
+          ]
+        }
+      ],
+      "run": [
+        {
+          "rect": [
+            702,
+            470,
+            103,
+            86
+          ],
+          "offset": [
+            -54,
+            -85
+          ]
+        },
+        {
+          "rect": [
+            807,
+            470,
+            100,
+            83
+          ],
+          "offset": [
+            -44,
+            -82
+          ]
+        },
+        {
+          "rect": [
+            909,
+            470,
+            103,
+            84
+          ],
+          "offset": [
+            -56,
+            -83
+          ]
+        },
+        {
+          "rect": [
+            1,
+            558,
+            101,
+            82
+          ],
+          "offset": [
+            -47,
+            -81
+          ]
+        }
+      ],
+      "run_left": [
+        {
+          "rect": [
+            104,
+            558,
+            103,
+            86
+          ],
+          "offset": [
+            -49,
+            -85
+          ]
+        },
+        {
+          "rect": [
+            209,
+            558,
+            100,
+            83
+          ],
+          "offset": [
+            -56,
+            -82
+          ]
+        },
+        {
+          "rect": [
+            311,
+            558,
+            103,
+            84
+          ],
+          "offset": [
+            -47,
+            -83
+          ]
+        },
+        {
+          "rect": [
+            416,
+            558,
+            101,
+            82
+          ],
+          "offset": [
+            -54,
+            -81
+          ]
+        }
+      ],
+      "hurt": [
+        {
+          "rect": [
+            519,
+            558,
+            89,
+            85
+          ],
+          "offset": [
+            -36,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            610,
+            558,
+            103,
+            86
+          ],
+          "offset": [
+            -54,
+            -85
+          ]
+        }
+      ],
+      "hurt_left": [
+        {
+          "rect": [
+            715,
+            558,
+            89,
+            85
+          ],
+          "offset": [
+            -53,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            806,
+            558,
+            103,
+            86
+          ],
+          "offset": [
+            -49,
+            -85
+          ]
+        }
+      ],
+      "death": [
+        {
+          "rect": [
+            911,
+            558,
+            89,
+            85
+          ],
+          "offset": [
+            -36,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            1,
+            646,
+            98,
+            73
+          ],
+          "offset": [
+            -59,
+            -72
+          ]
+        },
+        {
+          "rect": [
+            101,
+            646,
+            98,
+            73
+          ],
+          "offset": [
+            -59,
+            -72
+          ]
+        },
+        {
+          "rect": [
+            201,
+            646,
+            109,
+            57
+          ],
+          "offset": [
+            -62,
+            -56
+          ]
+        }
+      ],
+      "death_left": [
+        {
+          "rect": [
+            312,
+            646,
+            89,
+            85
+          ],
+          "offset": [
+            -53,
+            -84
+          ]
+        },
+        {
+          "rect": [
+            403,
+            646,
+            98,
+            73
+          ],
+          "offset": [
+            -39,
+            -72
+          ]
+        },
+        {
+          "rect": [
+            503,
+            646,
+            98,
+            73
+          ],
+          "offset": [
+            -39,
+            -72
+          ]
+        },
+        {
+          "rect": [
+            603,
+            646,
+            109,
+            57
+          ],
+          "offset": [
+            -47,
+            -56
+          ]
+        }
+      ]
+    },
+    "urchin": {
+      "idle": [
+        {
+          "rect": [
+            714,
+            646,
+            70,
+            87
+          ],
+          "offset": [
+            -34,
+            -86
+          ]
+        }
+      ],
+      "idle_left": [
+        {
+          "rect": [
+            786,
+            646,
+            70,
+            87
+          ],
+          "offset": [
+            -36,
+            -86
+          ]
+        }
+      ],
+      "run": [
+        {
+          "rect": [
+            858,
+            646,
+            70,
+            87
+          ],
+          "offset": [
+            -34,
+            -86
+          ]
+        },
+        {
+          "rect": [
+            930,
+            646,
+            63,
+            87
+          ],
+          "offset": [
+            -16,
+            -86
+          ]
+        },
+        {
+          "rect": [
+            1,
+            735,
+            67,
+            86
+          ],
+          "offset": [
+            -34,
+            -85
+          ]
+        },
+        {
+          "rect": [
+            70,
+            735,
+            61,
+            87
+          ],
+          "offset": [
+            -21,
+            -86
+          ]
+        }
+      ],
+      "run_left": [
+        {
+          "rect": [
+            133,
+            735,
+            70,
+            87
+          ],
+          "offset": [
+            -36,
+            -86
+          ]
+        },
+        {
+          "rect": [
+            205,
+            735,
+            63,
+            87
+          ],
+          "offset": [
+            -47,
+            -86
+          ]
+        },
+        {
+          "rect": [
+            270,
+            735,
+            67,
+            86
+          ],
+          "offset": [
+            -33,
+            -85
+          ]
+        },
+        {
+          "rect": [
+            339,
+            735,
+            61,
+            87
+          ],
+          "offset": [
+            -40,
+            -86
+          ]
+        }
+      ],
+      "hurt": [
+        {
+          "rect": [
+            402,
+            735,
+            72,
+            87
+          ],
+          "offset": [
+            -38,
+            -86
+          ]
+        },
+        {
+          "rect": [
+            476,
+            735,
+            70,
+            87
+          ],
+          "offset": [
+            -34,
+            -86
+          ]
+        }
+      ],
+      "hurt_left": [
+        {
+          "rect": [
+            548,
+            735,
+            72,
+            87
+          ],
+          "offset": [
+            -34,
+            -86
+          ]
+        },
+        {
+          "rect": [
+            622,
+            735,
+            70,
+            87
+          ],
+          "offset": [
+            -36,
+            -86
+          ]
+        }
+      ],
+      "death": [
+        {
+          "rect": [
+            694,
+            735,
+            72,
+            87
+          ],
+          "offset": [
+            -38,
+            -86
+          ]
+        },
+        {
+          "rect": [
+            768,
+            735,
+            85,
+            76
+          ],
+          "offset": [
+            -36,
+            -75
+          ]
+        },
+        {
+          "rect": [
+            855,
+            735,
+            85,
+            76
+          ],
+          "offset": [
+            -36,
+            -75
+          ]
+        },
+        {
+          "rect": [
+            1,
+            824,
+            91,
+            57
+          ],
+          "offset": [
+            -56,
+            -56
+          ]
+        }
+      ],
+      "death_left": [
+        {
+          "rect": [
+            94,
+            824,
+            72,
+            87
+          ],
+          "offset": [
+            -34,
+            -86
+          ]
+        },
+        {
+          "rect": [
+            168,
+            824,
+            85,
+            76
+          ],
+          "offset": [
+            -49,
+            -75
+          ]
+        },
+        {
+          "rect": [
+            255,
+            824,
+            85,
+            76
+          ],
+          "offset": [
+            -49,
+            -75
+          ]
+        },
+        {
+          "rect": [
+            342,
+            824,
+            91,
+            57
+          ],
+          "offset": [
+            -35,
+            -56
+          ]
+        }
+      ]
+    },
+    "boss": {
+      "idle": [
+        {
+          "rect": [
+            435,
+            824,
+            95,
+            121
+          ],
+          "offset": [
+            -40,
+            -120
+          ]
+        }
+      ],
+      "idle_left": [
+        {
+          "rect": [
+            532,
+            824,
+            95,
+            121
+          ],
+          "offset": [
+            -55,
+            -120
+          ]
+        }
+      ],
+      "run": [
+        {
+          "rect": [
+            629,
+            824,
+            95,
+            121
+          ],
+          "offset": [
+            -40,
+            -120
+          ]
+        },
+        {
+          "rect": [
+            726,
+            824,
+            86,
+            121
+          ],
+          "offset": [
+            -25,
+            -120
+          ]
+        },
+        {
+          "rect": [
+            814,
+            824,
+            91,
+            120
+          ],
+          "offset": [
+            -44,
+            -119
+          ]
+        },
+        {
+          "rect": [
+            907,
+            824,
+            85,
+            122
+          ],
+          "offset": [
+            -31,
+            -121
+          ]
+        }
+      ],
+      "run_left": [
+        {
+          "rect": [
+            1,
+            948,
+            95,
+            121
+          ],
+          "offset": [
+            -55,
+            -120
+          ]
+        },
+        {
+          "rect": [
+            98,
+            948,
+            86,
+            121
+          ],
+          "offset": [
+            -61,
+            -120
+          ]
+        },
+        {
+          "rect": [
+            186,
+            948,
+            91,
+            120
+          ],
+          "offset": [
+            -47,
+            -119
+          ]
+        },
+        {
+          "rect": [
+            279,
+            948,
+            85,
+            122
+          ],
+          "offset": [
+            -54,
+            -121
+          ]
+        }
+      ],
+      "hurt": [
+        {
+          "rect": [
+            366,
+            948,
+            97,
+            121
+          ],
+          "offset": [
+            -44,
+            -120
+          ]
+        },
+        {
+          "rect": [
+            465,
+            948,
+            95,
+            121
+          ],
+          "offset": [
+            -40,
+            -120
+          ]
+        }
+      ],
+      "hurt_left": [
+        {
+          "rect": [
+            562,
+            948,
+            97,
+            121
+          ],
+          "offset": [
+            -53,
+            -120
+          ]
+        },
+        {
+          "rect": [
+            661,
+            948,
+            95,
+            121
+          ],
+          "offset": [
+            -55,
+            -120
+          ]
+        }
+      ],
+      "death": [
+        {
+          "rect": [
+            758,
+            948,
+            97,
+            121
+          ],
+          "offset": [
+            -44,
+            -120
+          ]
+        },
+        {
+          "rect": [
+            857,
+            948,
+            97,
+            100
+          ],
+          "offset": [
+            -39,
+            -99
+          ]
+        },
+        {
+          "rect": [
+            1,
+            1072,
+            97,
+            100
+          ],
+          "offset": [
+            -39,
+            -99
+          ]
+        },
+        {
+          "rect": [
+            100,
+            1072,
+            114,
+            70
+          ],
+          "offset": [
+            -53,
+            -69
+          ]
+        }
+      ],
+      "death_left": [
+        {
+          "rect": [
+            216,
+            1072,
+            97,
+            121
+          ],
+          "offset": [
+            -53,
+            -120
+          ]
+        },
+        {
+          "rect": [
+            315,
+            1072,
+            97,
+            100
+          ],
+          "offset": [
+            -58,
+            -99
+          ]
+        },
+        {
+          "rect": [
+            414,
+            1072,
+            97,
+            100
+          ],
+          "offset": [
+            -58,
+            -99
+          ]
+        },
+        {
+          "rect": [
+            513,
+            1072,
+            114,
+            70
+          ],
+          "offset": [
+            -61,
+            -69
+          ]
+        }
+      ]
+    }
+  },
+  "names": {
+    "pulse": "Copper Scout",
+    "frost": "Mist Weaver",
+    "burst": "Reef Guard",
+    "crab": "Rift Hermit",
+    "sail": "Sailbeast",
+    "urchin": "Spine Revenant",
+    "boss": "Abyss Warden"
+  },
+  "source_sheets": {
+    "crew-poses.png": "13931429057184d5fe1fc9c42f6befccb06e5509088b2b587e80acdc8043072e",
+    "enemy-walk.png": "234ac14d689f98656a29c5ce9698188a3f493f96ecd84265967c08b936dd48f1",
+    "enemy-damage.png": "368d578c20a23146c25d367b470ae3a00067cec5bfe32208458ef967523e397c",
+    "chest-pair.png": "6c1c4dc0ff2217245a2f9f8b5a547dfda2480dbafdceb260ee39a0de75793ede"
+  },
+  "source_poses": {
+    "pulse/crew": [
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          0,
+          0,
+          300,
+          346
+        ],
+        "crop": [
+          89,
+          9,
+          287,
+          330
+        ],
+        "source_scale": 0.2902208201892745,
+        "master_offset": [
+          70,
+          56
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          300,
+          0,
+          680,
+          346
+        ],
+        "crop": [
+          433,
+          16,
+          614,
+          330
+        ],
+        "source_scale": 0.2902208201892745,
+        "master_offset": [
+          72,
+          58
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          680,
+          0,
+          1100,
+          346
+        ],
+        "crop": [
+          790,
+          25,
+          1086,
+          329
+        ],
+        "source_scale": 0.2902208201892745,
+        "master_offset": [
+          68,
+          61
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          1100,
+          0,
+          1448,
+          346
+        ],
+        "crop": [
+          1170,
+          13,
+          1366,
+          330
+        ],
+        "source_scale": 0.2902208201892745,
+        "master_offset": [
+          70,
+          57
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "frost/crew": [
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          0,
+          346,
+          300,
+          687
+        ],
+        "crop": [
+          71,
+          363,
+          266,
+          666
+        ],
+        "source_scale": 0.3076923076923077,
+        "master_offset": [
+          67,
+          56
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          300,
+          346,
+          680,
+          687
+        ],
+        "crop": [
+          395,
+          372,
+          605,
+          664
+        ],
+        "source_scale": 0.3076923076923077,
+        "master_offset": [
+          64,
+          59
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          680,
+          346,
+          1100,
+          687
+        ],
+        "crop": [
+          742,
+          373,
+          1062,
+          666
+        ],
+        "source_scale": 0.3076923076923077,
+        "master_offset": [
+          64,
+          59
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          1100,
+          346,
+          1448,
+          687
+        ],
+        "crop": [
+          1156,
+          365,
+          1357,
+          666
+        ],
+        "source_scale": 0.3076923076923077,
+        "master_offset": [
+          67,
+          56
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "burst/crew": [
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          0,
+          687,
+          300,
+          1086
+        ],
+        "crop": [
+          37,
+          709,
+          275,
+          1042
+        ],
+        "source_scale": 0.2796352583586626,
+        "master_offset": [
+          64,
+          56
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          300,
+          687,
+          680,
+          1086
+        ],
+        "crop": [
+          313,
+          710,
+          642,
+          1034
+        ],
+        "source_scale": 0.2796352583586626,
+        "master_offset": [
+          44,
+          58
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          680,
+          687,
+          1100,
+          1086
+        ],
+        "crop": [
+          714,
+          747,
+          1041,
+          1044
+        ],
+        "source_scale": 0.2796352583586626,
+        "master_offset": [
+          50,
+          66
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "crew-poses.png",
+        "cell": [
+          1100,
+          687,
+          1448,
+          1086
+        ],
+        "crop": [
+          1134,
+          710,
+          1381,
+          1042
+        ],
+        "source_scale": 0.2796352583586626,
+        "master_offset": [
+          64,
+          56
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "crab/walk": [
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          0,
+          0,
+          310,
+          284
+        ],
+        "crop": [
+          37,
+          25,
+          291,
+          269
+        ],
+        "source_scale": 0.35,
+        "master_offset": [
+          52,
+          64
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          310,
+          0,
+          600,
+          284
+        ],
+        "crop": [
+          343,
+          21,
+          579,
+          264
+        ],
+        "source_scale": 0.35,
+        "master_offset": [
+          58,
+          64
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          600,
+          0,
+          904,
+          284
+        ],
+        "crop": [
+          639,
+          28,
+          883,
+          269
+        ],
+        "source_scale": 0.35,
+        "master_offset": [
+          54,
+          65
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          904,
+          0,
+          1199,
+          284
+        ],
+        "crop": [
+          936,
+          18,
+          1169,
+          266
+        ],
+        "source_scale": 0.35,
+        "master_offset": [
+          66,
+          62
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "sail/walk": [
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          0,
+          284,
+          310,
+          540
+        ],
+        "crop": [
+          16,
+          307,
+          281,
+          527
+        ],
+        "source_scale": 0.3888888888888889,
+        "master_offset": [
+          42,
+          63
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          310,
+          284,
+          600,
+          540
+        ],
+        "crop": [
+          322,
+          307,
+          579,
+          520
+        ],
+        "source_scale": 0.3888888888888889,
+        "master_offset": [
+          52,
+          66
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          600,
+          284,
+          904,
+          540
+        ],
+        "crop": [
+          612,
+          310,
+          878,
+          527
+        ],
+        "source_scale": 0.3888888888888889,
+        "master_offset": [
+          40,
+          65
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          904,
+          284,
+          1199,
+          540
+        ],
+        "crop": [
+          918,
+          307,
+          1178,
+          517
+        ],
+        "source_scale": 0.3888888888888889,
+        "master_offset": [
+          49,
+          67
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "urchin/walk": [
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          0,
+          540,
+          310,
+          851
+        ],
+        "crop": [
+          48,
+          567,
+          265,
+          839
+        ],
+        "source_scale": 0.3208955223880597,
+        "master_offset": [
+          62,
+          62
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          310,
+          540,
+          600,
+          851
+        ],
+        "crop": [
+          354,
+          566,
+          551,
+          837
+        ],
+        "source_scale": 0.3208955223880597,
+        "master_offset": [
+          80,
+          62
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          600,
+          540,
+          904,
+          851
+        ],
+        "crop": [
+          639,
+          571,
+          847,
+          839
+        ],
+        "source_scale": 0.3208955223880597,
+        "master_offset": [
+          62,
+          63
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          904,
+          540,
+          1199,
+          851
+        ],
+        "crop": [
+          946,
+          566,
+          1137,
+          836
+        ],
+        "source_scale": 0.3208955223880597,
+        "master_offset": [
+          75,
+          62
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "boss/walk": [
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          0,
+          851,
+          310,
+          1312
+        ],
+        "crop": [
+          19,
+          880,
+          300,
+          1239
+        ],
+        "source_scale": 0.3380281690140845,
+        "master_offset": [
+          56,
+          28
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          310,
+          851,
+          600,
+          1312
+        ],
+        "crop": [
+          337,
+          880,
+          592,
+          1237
+        ],
+        "source_scale": 0.3380281690140845,
+        "master_offset": [
+          71,
+          28
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          600,
+          851,
+          904,
+          1312
+        ],
+        "crop": [
+          624,
+          883,
+          893,
+          1239
+        ],
+        "source_scale": 0.3380281690140845,
+        "master_offset": [
+          52,
+          29
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-walk.png",
+        "cell": [
+          904,
+          851,
+          1199,
+          1312
+        ],
+        "crop": [
+          934,
+          878,
+          1186,
+          1239
+        ],
+        "source_scale": 0.3380281690140845,
+        "master_offset": [
+          65,
+          27
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "crab/damage": [
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          0,
+          0,
+          357,
+          320
+        ],
+        "crop": [
+          67,
+          50,
+          325,
+          298
+        ],
+        "source_scale": 0.3442622950819672,
+        "master_offset": [
+          65,
+          64
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          357,
+          0,
+          694,
+          320
+        ],
+        "crop": [
+          394,
+          78,
+          668,
+          304
+        ],
+        "source_scale": 0.3442622950819672,
+        "master_offset": [
+          56,
+          71
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          694,
+          0,
+          1086,
+          320
+        ],
+        "crop": [
+          740,
+          112,
+          1036,
+          304
+        ],
+        "source_scale": 0.3442622950819672,
+        "master_offset": [
+          55,
+          83
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "sail/damage": [
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          0,
+          320,
+          357,
+          605
+        ],
+        "crop": [
+          44,
+          337,
+          311,
+          593
+        ],
+        "source_scale": 0.3333333333333333,
+        "master_offset": [
+          60,
+          64
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          357,
+          320,
+          694,
+          605
+        ],
+        "crop": [
+          372,
+          364,
+          665,
+          583
+        ],
+        "source_scale": 0.3333333333333333,
+        "master_offset": [
+          37,
+          76
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          694,
+          320,
+          1086,
+          605
+        ],
+        "crop": [
+          724,
+          411,
+          1051,
+          583
+        ],
+        "source_scale": 0.3333333333333333,
+        "master_offset": [
+          34,
+          92
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "urchin/damage": [
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          0,
+          605,
+          357,
+          940
+        ],
+        "crop": [
+          71,
+          620,
+          326,
+          928
+        ],
+        "source_scale": 0.28289473684210525,
+        "master_offset": [
+          58,
+          62
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          357,
+          605,
+          694,
+          940
+        ],
+        "crop": [
+          378,
+          651,
+          680,
+          919
+        ],
+        "source_scale": 0.28289473684210525,
+        "master_offset": [
+          60,
+          73
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          694,
+          605,
+          1086,
+          940
+        ],
+        "crop": [
+          721,
+          715,
+          1044,
+          915
+        ],
+        "source_scale": 0.28289473684210525,
+        "master_offset": [
+          40,
+          92
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ],
+    "boss/damage": [
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          0,
+          940,
+          357,
+          1448
+        ],
+        "crop": [
+          29,
+          952,
+          346,
+          1347
+        ],
+        "source_scale": 0.3069053708439898,
+        "master_offset": [
+          52,
+          28
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          357,
+          940,
+          694,
+          1448
+        ],
+        "crop": [
+          372,
+          1009,
+          688,
+          1335
+        ],
+        "source_scale": 0.3069053708439898,
+        "master_offset": [
+          57,
+          49
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      },
+      {
+        "sheet": "enemy-damage.png",
+        "cell": [
+          694,
+          940,
+          1086,
+          1448
+        ],
+        "crop": [
+          701,
+          1119,
+          1074,
+          1346
+        ],
+        "source_scale": 0.3069053708439898,
+        "master_offset": [
+          43,
+          79
+        ],
+        "anchor_method": "opaque lower 10% band midpoint"
+      }
+    ]
+  },
+  "atlas_size": [
+    1024,
+    1194
+  ],
+  "atlas_sha256": "a2c0af743ef5678314dd342c912295b3d20e943407967c1693bc68f35a1d9d9b"
+}

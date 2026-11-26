@@ -1,6 +1,6 @@
 config_version=5
 [application]
-config/name="Riftworks Prototype"
+config/name="Riftworks: Tideway Station"
 run/main_scene="res://src/Main.tscn"
 [display]
 window/size/viewport_width=1280
