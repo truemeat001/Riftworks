@@ -10,6 +10,9 @@ const LIMITS={"loot":4,"UI":2,"Combat":6,"Alert":2}
 const VARIANTS={"chest_charge":1,"chest_open":3,"loot_crew":1,"loot_relic":1,"loot_upgrade":1,"loot_arrive":1,"ui_press":1,"ui_reject":1,"deploy":3,"recall":1,"merge":1,"sell":1,"wave_start":1,"hit_pulse":3,"hit_frost":3,"hit_burst":3,"kill":3,"conductive":3,"shatter":3,"danger":1,"leak":1,"wave_clear":1,"victory":1,"defeat":1}
 const COMBAT_IDS=["hit_pulse","hit_frost","hit_burst","kill","conductive","shatter"]
 const ALERT_IDS=["wave_start","danger","leak"]
+# Preserve the ongoing warning and at least one actual damage cue under saturation.
+# Entry fanfare is decorative relative to a real threat or actual damage.
+const ALERT_PRIORITY={"wave_start":0,"leak":2,"danger":3}
 const LOOT_IDS=["chest_charge","chest_open","loot_crew","loot_relic","loot_upgrade","loot_arrive"]
 # Per-event amplitude trims keep overlapping bursts below master headroom.
 const EVENT_GAIN={"chest_charge":-3.0,"chest_open":-5.0,"loot_crew":-4.0,"loot_relic":-3.0,"loot_upgrade":-3.0,"loot_arrive":-1.0,"ui_press":-4.0,"ui_reject":-3.0,"deploy":-3.0,"recall":-2.0,"merge":-4.0,"sell":-3.0,"wave_start":-3.0,"hit_pulse":-6.0,"hit_frost":-5.0,"hit_burst":-6.0,"kill":-5.0,"conductive":-8.0,"shatter":-7.0,"danger":-2.0,"leak":-2.0,"wave_clear":-4.0,"victory":-3.0,"defeat":-3.0}
@@ -176,9 +179,28 @@ func play_event(id:String,pos:Vector2=INVALID_POS,variant_hint:int=0)->bool:
 	for i in range(_voices.size()):
 		if _voices[i].group==group:same.append(i)
 	if same.size()>=int(LIMITS[group]):
-		# Combat overload drops new decoration; UI/loot/alert replaces the oldest tail.
+		# Combat overload drops new decoration; UI/loot replaces the oldest tail.
 		if group=="Combat":_dropped+=1;return false
 		var idx:int=same[0]
+		if group=="Alert":
+			# Prefer replacing a same-ID tail; otherwise evict the least-important
+			# existing alert only if it is no more important than the incoming one.
+			# This reserves danger and damage cues against repeated leak/stale entry bursts.
+			idx=-1
+			for i in same:
+				if _voices[i].id==id:
+					idx=i
+					break
+			if idx<0:
+				var least:int=int(ALERT_PRIORITY[id])
+				for i in same:
+					var priority:int=int(ALERT_PRIORITY[_voices[i].id])
+					if priority<=least and (idx<0 or priority<least):
+						idx=i
+						least=priority
+			if idx<0:
+				_dropped+=1
+				return false
 		var old:Node=_voices[idx].player
 		if is_instance_valid(old):old.stop();old.queue_free()
 		_voices.remove_at(idx)

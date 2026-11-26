@@ -3,6 +3,8 @@ extends Node2D
 const Run = preload("res://src/Run.gd")
 const GameAudio = preload("res://src/GameAudio.gd")
 const Atmosphere = preload("res://src/BattleAtmosphere.gd")
+const Tutorial = preload("res://src/Tutorial.gd")
+const Readability = preload("res://src/BattleReadability.gd")
 const ORIGIN = Vector2(52, 60)
 const TILE = 76.0
 const BOARD = Rect2(ORIGIN, Vector2(12,8)*TILE)
@@ -30,6 +32,10 @@ const PHASES = {"build":"PLAN", "fight":"DEFEND", "won":"VICTORY", "lost":"DEFEA
 var game = Run.new()
 var audio=GameAudio.new()
 var atmosphere=Atmosphere.new()
+var tutorial=Tutorial.new()
+var readability=Readability.new()
+var tutorial_button:Button
+var guide_hint_cell:=Vector2i(-1,-1)
 var audio_paused_seen:bool=false
 var sound_button:Button
 var notice_seen:String=""
@@ -187,6 +193,7 @@ func _ready() -> void:
 	font = ThemeDB.fallback_font
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
 	load_sprites()
+	tutorial.load_preference()
 	add_child(audio)
 	var layer = CanvasLayer.new()
 	add_child(layer)
@@ -198,14 +205,16 @@ func _ready() -> void:
 	make_label(ui,"RIFTWORKS: TIDEWAY",Rect2(21,6,188,25),17)
 	label_seed=make_label(ui,"",Rect2(21,32,188,15),10,MUTED)
 	label_status=make_label(ui,"",Rect2(225,12,192,32),19,INK)
-	label_rule=make_label(ui,"",Rect2(445,8,284,34),21,INK)
+	label_rule=make_label(ui,"",Rect2(445,8,210,34),18,INK)
+	tutorial_button=make_button(ui,"SKIP GUIDE",Rect2(659,9,75,32),MUTED,12)
+	tutorial_button.pressed.connect(_toggle_tutorial)
 	label_phase=make_label(ui,"",Rect2(751,10,178,34),15,INK)
 	sound_button=make_button(ui,"SOUND ON",Rect2(930,9,78,32),MUTED,11)
 	sound_button.tooltip_text="Toggle all game audio. Audio starts after the first input gesture."
 	sound_button.pressed.connect(_toggle_sound)
 	# Two compact planning ribbons stay off the map's actionable cells.
 	label_forecast=make_label(ui,"",Rect2(1031,265,231,72),12,MUTED)
-	label_message=make_label(ui,"",Rect2(16,676,656,20),12,INK)
+	label_message=make_label(ui,"",Rect2(16,675,656,22),12,INK)
 	explore_button=make_button(ui,"EXPLORE · 6",Rect2(1032,171,228,48),PRIMARY,19)
 	explore_button.pressed.connect(_explore)
 	loot_label=make_label(ui,"",Rect2(1034,224,224,40),13,INK)
@@ -233,7 +242,7 @@ func _ready() -> void:
 	label_core=make_label(ui,"",Rect2(1033,671,226,72),11,MUTED)
 	sell_core_button=make_button(ui,"SELL RELIC +4",Rect2(1032,748,228,39),WARN,14)
 	sell_core_button.pressed.connect(_sell_selected_core)
-	label_feedback=make_label(ui,"",Rect2(16,697,656,18),12,MUTED)
+	label_feedback=make_label(ui,"",Rect2(16,699,656,18),12,MUTED)
 	label_reserve=make_label(ui,"",Rect2(680,677,119,20),12,INK)
 	for i in range(9):
 		var b=make_button(ui,"",Rect2(13+i*74,721,69,70),ACC,11)
@@ -264,6 +273,8 @@ func _ready() -> void:
 	game.changed.connect(refresh)
 	game.reset(seed_value)
 	atmosphere.reset(game)
+	if tutorial.active:tutorial.begin(game)
+	refresh()
 
 func make_label(parent:Node, value:String, area:Rect2, sz:int, c:Color=INK) -> Label:
 	var l = Label.new()
@@ -344,6 +355,7 @@ func _explore()->void:
 		loot_reveal=result.duplicate(true)
 		loot_age=0.0
 		audio.start_loot(loot_reveal)
+		tutorial.accepted_action("explore")
 		if result.get("kind","")=="tower":
 			selected_id=int(result.get("id",-1))
 			selected_core=""
@@ -428,6 +440,7 @@ func _select_tower(id:int)->void:
 			merge_mode=false
 			notice=""
 			audio.play_event("merge")
+			tutorial.accepted_action("merge")
 		else:
 			notice="Merge was not available."
 			audio.play_event("ui_reject")
@@ -510,6 +523,7 @@ func _start()->void:
 	if game.start():
 		atmosphere.observe(game)
 		audio.set_battle_active(true)
+		tutorial.accepted_action("start")
 		audio.play_event("wave_start",Vector2(game.path()[0]))
 		if game.stage==1 and game.opened:audio.play_event("wave_start",Vector2(game.path(false)[0]))
 	else:
@@ -564,9 +578,13 @@ func _restart(random_seed:bool)->void:
 	death_fx.clear()
 	idle_clock=0.0
 	audio.reset_scene()
+	var rerun_guide=tutorial.active
 	game.reset(seed_value)
 	atmosphere.reset(game)
+	readability.reset()
+	if rerun_guide:tutorial.begin(game)
 	audio_paused_seen=false
+	refresh()
 
 func update_status()->void:
 	label_status.text="♥ %02d    　 %02d" % [maxi(game.hp,0),game.gold]
@@ -588,6 +606,7 @@ func update_status()->void:
 		if game.stage==2 and game.wave==1:label_forecast.text+="\nBoss escape = defeat."
 
 func refresh()->void:
+	tutorial.observe(game)
 	if game.phase!="fight":
 		paused=false
 		last_attacks.clear()
@@ -599,7 +618,7 @@ func refresh()->void:
 	if t.is_empty():selected_id=-1;merge_mode=false;merge_hover_id=-1
 	var planning:bool=game.phase=="build"
 	update_status()
-	label_seed.text="P07 · Seed %d"%seed_value
+	label_seed.text="P08 · Seed %d"%seed_value
 	label_rule.text=Run.NAMES[game.stage].to_upper()
 	label_rule.tooltip_text=["Switch the tidal crossing.","Open second inlet: +6 if leak-free.","Echo reefs amplify your crew."][game.stage]
 	if game.stage==2 and game.wave==1:label_rule.tooltip_text="Boss escape = immediate defeat."
@@ -669,6 +688,13 @@ func refresh()->void:
 			else:guide="③ Compare route coverage, then start."
 			var receipt=game.message if game.message!="Build a defense, then start the wave." else ""
 			label_message.text=(receipt+" · "+guide) if not receipt.is_empty() and (receipt.length()+guide.length())<96 else guide
+	tutorial_button.text="SKIP GUIDE" if tutorial.active else "GUIDE"
+	tutorial_button.tooltip_text="Skip the optional guide. No game progress or coins change." if tutorial.active else "Replay guidance from the current run. No reset or purchase."
+	label_message.add_theme_font_size_override("font_size",15 if tutorial.active and restart_confirm.is_empty() and sell_confirm.is_empty() else 12)
+	if tutorial.active and restart_confirm.is_empty() and sell_confirm.is_empty():
+		var guide=tutorial.instruction(game,t)
+		if not guide.is_empty():label_message.text=guide
+	update_tutorial_hint(t)
 	sound_button.text="SOUND OFF" if audio.is_muted() else "SOUND ON"
 	sound_button.tooltip_text="Click to enable game sound." if audio.is_muted() else "Click to mute all game sound."
 	label_reserve.text="FIELD %d/5 · %d/9"%[game.towers.size(),game.towers.size()+game.reserve.size()]
@@ -690,12 +716,17 @@ func refresh()->void:
 		var b:Button=core_buttons[i]
 		b.text="%d/%d"%[rank,Run.MAX_RANK[u.id]]
 		b.tooltip_text=u.description
+		if u.id=="freeze" and str(u.description).contains("shares half"):
+			b.tooltip_text="Deep Frost: +3% damage/rank; stronger, longer Mist slow. Hammer splash halves a living non-Boss donor's remaining slow and splits the removed duration equally among up to rank previously unslowed surviving non-Boss splash victims. No eligible target: unchanged. No extra damage."
 		b.modulate=Color.WHITE
 		configure_button(b,ACC if selected_core==u.id else (AMP if rank>0 else MUTED))
 	label_core.text="Select a module to see its effect and sell one rank."
 	for u in Run.UPGRADES:
 		if u.id==selected_core:
 			label_core.text="%s  R%d\n%s"%[u.name,game.level(u.id),u.description]
+			if u.id=="freeze" and str(u.description).contains("shares half"):
+				label_core.text="Deep frost R%d · Hammer splash\nLive donor: remaining slow halved\n→ up to rank unslowed survivors\nNo Boss. No target: unchanged."%game.level(u.id)
+			label_core.tooltip_text=core_buttons[Run.UPGRADES.find(u)].tooltip_text
 	sell_core_button.text="CONFIRM +4" if sell_confirm=="core:%s:%d"%[selected_core,game.level(selected_core)] else "SELL RELIC +4"
 	sell_core_button.disabled=not planning or selected_core.is_empty() or game.level(selected_core)<=0
 	if notice!=notice_seen:
@@ -791,6 +822,61 @@ func coverage_summary(lanes:Array,preview:bool=false)->String:
 			parts.append("%s %d%%"%[name,roundi(float(lane.get("covered",0.0))/length*100.0)])
 	return " / ".join(parts)
 
+func _toggle_tutorial()->void:
+	sell_confirm=""
+	restart_confirm=""
+	_cancel_pointer()
+	if tutorial.active:tutorial.skip()
+	else:tutorial.begin(game)
+	# Unrelated action cancels a pending confirmation, but preserves selection, paused flag, loot and model.
+	refresh()
+
+func update_tutorial_hint(t:Dictionary)->void:
+	guide_hint_cell=Vector2i(-1,-1)
+	if not tutorial.active or tutorial.step!="deploy" or t.is_empty() or game.phase!="build":return
+	if not restart_confirm.is_empty() or not sell_confirm.is_empty() or merge_mode:return
+	var best=-INF
+	for y in range(Run.ROWS):
+		for x in range(Run.COLS):
+			var cell=Vector2i(x,y)
+			if not candidate_error(cell,t).is_empty() or not tower_at(cell).is_empty():continue
+			var cov:Dictionary=game.coverage_preview(cell,t.kind,t.rank,t.id)
+			if not cov.get("valid",false):continue
+			var score=0.0
+			for lane in cov.get("lanes",[]):
+				score+=float(lane.get("team_after",0.0))/maxf(0.001,float(lane.get("length",0.0)))
+			if score>best:
+				best=score
+				guide_hint_cell=cell
+
+func draw_tutorial_focus()->void:
+	if not tutorial.active or not restart_confirm.is_empty() or not sell_confirm.is_empty():return
+	var target:Button=null
+	match tutorial.step:
+		"explore":
+			target=explore_button
+		"deploy":
+			if selected_id<0 and not game.reserve.is_empty():target=reserve_buttons[0]
+			elif guide_hint_cell.x>=0:
+				var marker=coord(Vector2(guide_hint_cell))+Vector2(0,13)
+				var fade=0.72+0.18*sin(idle_clock*5.0)
+				draw_circle(marker,9.0,Color(1.0,0.96,0.80,fade))
+				draw_arc(marker,12.0,0,TAU,40,Color(ACC,fade),2.4,true)
+				draw_line(marker+Vector2(-7,-16),marker+Vector2(0,-9),ACC,2,true)
+				draw_line(marker+Vector2(0,-9),marker+Vector2(7,-16),ACC,2,true)
+		"start":
+			target=start_button
+		"fight":
+			target=null # Watching the fight is the step; pause is optional, not required.
+		"after_wave":
+			if game.towers.is_empty() and not game.reserve.is_empty():target=reserve_buttons[0]
+			else:target=special_button if special_button.visible and not special_button.disabled else (merge_button if not merge_button.disabled else start_button)
+		"terminal":
+			target=restart_button
+	if target!=null and target.visible and not target.disabled:
+		var rect=target.get_global_rect().grow(3)
+		draw_rect(rect,Color(ACC,0.62+0.18*sin(idle_clock*5.0)),false,2)
+
 func _toggle_sound()->void:
 	audio.set_muted(not audio.is_muted())
 	refresh()
@@ -801,8 +887,9 @@ func _alter_route()->void:
 	restart_confirm=""
 	_cancel_pointer()
 	notice=""
-	if game.phase=="build":
+	if game.phase=="build" and game.stage<2:
 		game.alter()
+		tutorial.accepted_action("route")
 		notice=("Route now "+("UPPER" if game.route_choice==0 else "LOWER")) if game.stage==0 else ("Rift now OPEN: +6 on clean clear." if game.opened else "Rift now CLOSED.")
 		refresh()
 
@@ -836,6 +923,7 @@ func update_hover()->void:
 		if game.phase=="build":
 			var current=coverage_summary(game.coverage_current())
 			label_feedback.text="Route coverage: "+current+"  ·  Select crew, then hover a map point."
+			if tutorial.active and tutorial.step=="deploy":label_feedback.text="Optional marked tile covers a useful path area. Any legal tile works."
 		else:label_feedback.text="Battle active · Pause or change speed."
 	elif not tower_at(hover).is_empty():
 		var other=tower_at(hover)
@@ -914,7 +1002,9 @@ func _unhandled_input(event:InputEvent)->void:
 			if not reason.is_empty():
 				notice=reason
 				audio.play_event("ui_reject")
-			elif game.deploy(selected_id,cell):audio.play_event("deploy",Vector2(cell))
+			elif game.deploy(selected_id,cell):
+				audio.play_event("deploy",Vector2(cell))
+				tutorial.accepted_action("deploy")
 			else:
 				notice="Deployment unavailable."
 				audio.play_event("ui_reject")
@@ -1202,6 +1292,7 @@ func draw_interface_paper()->void:
 
 func _draw()->void:
 	if font==null:return
+	var visual_layout:Dictionary=readability.layout(game,ORIGIN,TILE)
 	draw_rect(Rect2(0,0,1280,800),BG)
 	var scene:Texture2D=scene_backdrops[game.stage] if scene_backdrops.size()>game.stage else null
 	if scene==null and not scene_backdrops.is_empty():scene=scene_backdrops[0]
@@ -1234,7 +1325,7 @@ func _draw()->void:
 		draw_bridge(Vector2(8,4),Vector2(10.7,4))
 	if game.stage==1: draw_entry(game.path(false)[0],"RIFT B",game.opened)
 	draw_entry(game.path()[0],"RIFT A",true)
-	atmosphere.draw_ground(self,game,ORIGIN,TILE,idle_clock)
+	atmosphere.draw_ground(self,game,ORIGIN,TILE,idle_clock,visual_layout)
 	if game.stage==2:
 		for cell in Run.AMP_CELLS:
 			var p=coord(Vector2(cell))
@@ -1286,34 +1377,32 @@ func _draw()->void:
 		atmosphere.draw_rank(self,p,t.rank)
 		draw_circle(p+Vector2(21,26),10,PANEL_DARK)
 		draw_string(font,p+Vector2(9,30),str(t.rank),HORIZONTAL_ALIGNMENT_CENTER,24,12,INK)
-	for e in game.enemies:
+	# Stable presentation rows: actual model positions remain authoritative; slight offsets
+	# and health placement prevent dense packs obscuring each other or the core alert.
+	var enemy_by_id:Dictionary={}
+	for e in game.enemies:enemy_by_id[int(e.id)]=e
+	for id in visual_layout.sorted_ids:
+		var e:Dictionary=enemy_by_id[id]
+		var row:Dictionary=visual_layout.units[id]
 		var dir:Vector2=e.get("direction",Vector2.RIGHT)
-		var p=coord(e.pos)+dir.orthogonal()*float((int(e.id)%3)-1)*5.0
+		var p:Vector2=row.pos
+		var anchor:Vector2=row.anchor
 		var r=19.0 if e.boss else 9.0
 		var c=Color("f2767c") if e.slow<=0 else Color("9bcdf7")
 		var sprite_id:String=ENEMY_SPRITES.get(e.get("role","normal"),"crab")
-		var anchor=p+Vector2(0,13)
+		readability.draw_ground_link(self,row)
 		draw_ellipse_shadow(anchor,r+3)
 		var hit_age=(game.tick_count-int(e.get("hit_tick",-999)))*Run.TICK
 		var hurt=hit_age>=0 and hit_age<0.16
-		if not draw_character(sprite_id,"hurt" if hurt else "run",anchor,character_scale(sprite_id),hit_age if hurt else game.tick_count*Run.TICK,dir.x<0):
+		if not draw_character(sprite_id,"hurt" if hurt else "run",anchor,character_scale(sprite_id)*float(row.scale_mul),hit_age if hurt else game.tick_count*Run.TICK+float(row.phase_offset),dir.x<0):
 			draw_circle(p,r,c)
-		
-		if e.boss: draw_arc(p,r+4,0,TAU,36,WARN,3,true)
-		# Unit health is the top gameplay-readable layer.
+		if e.boss:draw_arc(p,r+4,0,TAU,36,WARN,3,true)
 	for d in death_fx:
-		var p=coord(d.pos)+d.direction.orthogonal()*float((int(d.id)%3)-1)*5.0+Vector2(0,13)
+		var p:Vector2=readability.death_anchor(d,ORIGIN,TILE)
 		var sprite_id:String=ENEMY_SPRITES.get(d.role,"crab")
-		draw_character(sprite_id,"death",p,character_scale(sprite_id),d.age,d.direction.x<0)
+		draw_character(sprite_id,"death",p,character_scale(sprite_id)*readability.death_scale(d),d.age,d.direction.x<0)
 	atmosphere.draw_combat(self,game,ORIGIN,TILE)
-	for e in game.enemies:
-		var dir:Vector2=e.get("direction",Vector2.RIGHT)
-		var p=coord(e.pos)+dir.orthogonal()*float((int(e.id)%3)-1)*5.0
-		var size=Vector2(38,5) if e.boss else Vector2(28,4)
-		var pos=p+Vector2(-size.x/2,27)
-		draw_rect(Rect2(pos-Vector2.ONE,size+Vector2.ONE*2),Color("213d48"))
-		draw_rect(Rect2(pos,size),Color("768287"))
-		draw_rect(Rect2(pos,Vector2(size.x*clampf(e.hp/e.maxhp,0,1),size.y)),Color("d15e43"))
+	readability.draw_health(self,game,visual_layout)
 	atmosphere.draw_alert(self,game,ORIGIN,TILE,font)
 	if game.phase=="build" and inside(hover) and not merge_mode and tower_at(hover).is_empty():
 		var t=get_tower(selected_id)
@@ -1326,6 +1415,7 @@ func _draw()->void:
 		draw_arc(coord(Vector2(pointer_cell))+Vector2(0,13),32,0,TAU,40,Color(ACC,0.8),3,true)
 	draw_interface_paper()
 	draw_loot_presentation()
+	draw_tutorial_focus()
 	if paused:
 		draw_rect(BOARD,Color(0.05,0.08,0.14,0.42))
 		draw_rect(Rect2(BOARD.get_center()-Vector2(112,26),Vector2(224,52)),PANEL)

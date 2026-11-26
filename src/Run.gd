@@ -31,12 +31,13 @@ const RIFT_HP_MULTIPLIER=2.0
 const CONDUCTIVE_DAMAGE=1.20
 const SHATTER_RADIUS=0.35
 const SHATTER_SPLASH=1.10
+const TIDE_SHARE=0.5
 const UPGRADES=[
 	{"id":"power","name":"Overcharge","description":"All towers deal 35% more base damage."},
 	{"id":"rapid","name":"Rapid cycle","description":"All towers recharge 25% faster."},
 	{"id":"range","name":"Long reach","description":"All towers gain one cell of range."},
 	{"id":"chain","name":"Chain pulse","description":"All damage +5%/rank. Brass Skirmisher hits another nearby target."},
-	{"id":"freeze","name":"Deep frost","description":"All damage +3%/rank. Mist Weaver slow grows stronger and longer."},
+	{"id":"freeze","name":"Deep frost","description":"All damage +3%/rank; stronger, longer mist. Hammer splash shares half of a slowed survivor's remaining slow among up to rank unslowed surviving victims (no bosses). Donor's remaining slow is halved; no eligible target = unchanged."},
 	{"id":"blast","name":"Echo burst","description":"All damage +5%/rank. Reef Hammer gains larger splash and damage."},
 	{"id":"focus","name":"Execution focus","description":"All towers deal extra damage to enemies below half health."},
 	{"id":"relay","name":"Resonant core","description":"Nearby friendly towers boost damage and range, stacking with terrain amplifiers."}
@@ -57,6 +58,7 @@ var enemies:Array=[]
 var upgrades:Dictionary={}
 var shots:Array=[]
 var deaths:Array=[]
+var tide_transfers:Array=[]
 var tick_count=0
 var pending=0
 var pending_main=0
@@ -75,7 +77,7 @@ var last_loot:Dictionary={}
 func reset(seed_value:int=437) -> void:
 	rng.seed=seed_value
 	stage=0; wave=0; hp=15; gold=24; phase="build"; route_choice=0; opened=false
-	towers.clear(); reserve.clear(); next_tower_id=1; enemies.clear(); upgrades.clear(); shots.clear(); deaths.clear()
+	towers.clear(); reserve.clear(); next_tower_id=1; enemies.clear(); upgrades.clear(); shots.clear(); deaths.clear(); tide_transfers.clear()
 	tick_count=0; pending=0; pending_main=0; pending_extra=0; spawn_time=0; spawn_count=0
 	kills=0; wave_leaks=0; run_leaks=0; wave_damage=0; boss_defeated=false
 	message="Build a defense, then start the wave."
@@ -277,7 +279,7 @@ func start() -> bool:
 	spawn_time=0; spawn_count=0; kills=0; wave_leaks=0; wave_damage=0
 	# Equal cooldown on every new wave means timing is a function of this wave's decisions.
 	for t in towers: t.cool=0.0
-	shots.clear(); deaths.clear()
+	shots.clear(); deaths.clear(); tide_transfers.clear()
 	message="Defend the core!"; changed.emit(); return true
 
 func level(id:String) -> int: return upgrades.get(id,0)
@@ -444,10 +446,30 @@ func damage_enemy(e:Dictionary, amount:float)->void:
 	e.hp-=amount
 	e.hit_tick=tick_count
 
+# Shatter Tide: redistribute, never create, remaining crowd-control duration.
+# Called once after actual Hammer splash damage; only survivors are candidates.
+func _spread_tide(donor:Dictionary,pre_slow:float,victims:Array,tower_id:int)->void:
+	var rank=level("freeze")
+	if rank<=0 or donor.boss or donor.hp<=0.0 or pre_slow<=0.0 or victims.is_empty():return
+	victims.sort_custom(func(a:Dictionary,b:Dictionary)->bool:
+		var da=remaining_distance(a);var db=remaining_distance(b)
+		return da<db if da!=db else int(a.id)<int(b.id))
+	var count=mini(rank,victims.size())
+	if count<=0:return
+	var share=pre_slow*TIDE_SHARE/float(count)
+	var sent=0.0
+	for i in range(count):
+		var recipient:Dictionary=victims[i]
+		recipient.slow=share
+		sent+=share
+		tide_transfers.append({"from":donor.pos,"to":recipient.pos,"duration":share,"tick":tick_count,"tower_id":tower_id,"donor_id":donor.id,"recipient_id":recipient.id})
+	donor.slow=maxf(0.0,float(donor.slow)-sent)
+
 func step() -> void:
 	if phase!="fight":return
 	tick_count+=1
 	while not deaths.is_empty() and tick_count-int(deaths[0].tick)>10: deaths.pop_front()
+	while not tide_transfers.is_empty() and tick_count-int(tide_transfers[0].tick)>10: tide_transfers.pop_front()
 	spawn_time-=TICK
 	if pending>0 and spawn_time<=0:
 		spawn(); pending-=1; spawn_time=0.48
@@ -484,7 +506,8 @@ func step() -> void:
 		if target.is_empty():continue
 		t.cool=st[2]
 		t.attack_tick=tick_count
-		var marked:bool=target.slow>0.0
+		var pre_slow:float=target.slow
+		var marked:bool=pre_slow>0.0
 		var bonus:float=CONDUCTIVE_DAMAGE if t.kind==0 and marked else 1.0
 		var synergy:String="conductive" if t.kind==0 and marked else ("shatter" if t.kind==2 and marked else "")
 		damage_enemy(target,st[0]*bonus*(1.0+0.3*level("focus") if target.hp<target.maxhp*0.5 else 1.0))
@@ -495,12 +518,16 @@ func step() -> void:
 		if t.kind==2 or (t.kind==0 and chain_limit>0):
 			var r:float=1.0+0.4*level("blast")+0.2*(t.rank-1)+(SHATTER_RADIUS if marked else 0.0) if t.kind==2 else 1.5
 			var chain_hits=0
+			var tide_candidates:Array=[]
 			for e in enemies:
 				if e!=target and e.hp>0 and e.pos.distance_to(target.pos)<=r:
 					damage_enemy(e,st[0]*((0.55+0.15*level("blast"))*(SHATTER_SPLASH if marked else 1.0) if t.kind==2 else 0.65))
 					shots.append({"from":target.pos,"to":e.pos,"kind":t.kind,"tower_id":t.id,"synergy":synergy if t.kind==2 else "","life":0.12})
+					if t.kind==2 and marked and level("freeze")>0 and e.hp>0.0 and not e.boss and e.slow<=0.0:
+						tide_candidates.append(e)
 					chain_hits+=1
 					if t.kind==0 and chain_hits>=chain_limit: break
+			if t.kind==2:_spread_tide(target,pre_slow,tide_candidates,t.id)
 	for i in range(enemies.size()-1,-1,-1):
 		if enemies[i].hp<=0:
 			if not enemies[i].get("escaped",false):

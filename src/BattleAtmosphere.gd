@@ -217,7 +217,7 @@ func _trace_draw(canvas:CanvasItem,mark:Dictionary,origin:Vector2,tile:float,fad
 	if cold:
 		canvas.draw_colored_polygon(PackedVector2Array([p+Vector2(1,-9),p+Vector2(4,-1),p+Vector2(1,2),p+Vector2(-2,-1)]),Color(ICE,0.40*fade))
 
-func draw_ground(canvas:CanvasItem,game,origin:Vector2,tile:float,idle_seconds:float)->void:
+func draw_ground(canvas:CanvasItem,game,origin:Vector2,tile:float,idle_seconds:float,layout:Dictionary={})->void:
 	for mark in previous_traces:
 		var fade:float=clampf(1.0-float(game.tick_count-last_wave_start_tick)/TRACE_FADE_TICKS,0.0,1.0)
 		if fade>0.0:_trace_draw(canvas,mark,origin,tile,fade)
@@ -245,6 +245,8 @@ func draw_ground(canvas:CanvasItem,game,origin:Vector2,tile:float,idle_seconds:f
 			if float(e.get("hp",0))<=0.0 or float(e.get("slow",0.0))<=0.0:continue
 			var dir:Vector2=e.get("direction",Vector2.RIGHT)
 			var p:Vector2=_world(e.pos,origin,tile)+dir.orthogonal()*float((int(e.id)%3)-1)*5.0+Vector2(0,13)
+			var units:Dictionary=layout.get("units",{})
+			if units.has(int(e.id)):p=Vector2(units[int(e.id)].anchor)
 			for k in range(4):
 				var angle:float=TAU*float(k)/4.0+PI/4.0
 				var n:Vector2=Vector2.from_angle(angle)
@@ -304,6 +306,38 @@ func draw_combat(canvas:CanvasItem,game,origin:Vector2,tile:float)->void:
 		if game.tick_count-last_contact_tick<6 and int(impact.tick)==last_contact_tick:
 			# First contact emphasized locally, not a full-screen flash.
 			_ring(canvas,p,10.0+u*8.0,Color(PAPER,0.4*a),2.0)
+
+	_draw_transfers(canvas,game,origin,tile)
+
+func _draw_transfers(canvas:CanvasItem,game,origin:Vector2,tile:float)->void:
+	# Actual non-damage tide transfer event; old/disabled Run has no list.
+	# Positions stay the authoritative event coordinates, never the readability
+	# render offset (damage/target logic must remain visually truthful).
+	var transfers=game.get("tide_transfers")
+	if not transfers is Array:return
+	for transfer in transfers:
+		var age:int=int(game.tick_count)-int(transfer.get("tick",-999))
+		if age<0 or age>=10:continue
+		var u:float=float(age)/10.0
+		var a:float=1.0-u
+		var from:Vector2=_world(transfer.from,origin,tile)
+		var to:Vector2=_world(transfer.to,origin,tile)
+		if from.distance_to(to)<0.01:continue
+		var dir:Vector2=(to-from).normalized()
+		var n:Vector2=dir.orthogonal()
+		var points:=PackedVector2Array()
+		for i in range(9):
+			var f:float=float(i)/8.0
+			points.append(from.lerp(to,f)+n*sin(f*PI)*6.0)
+		# Teal water ribbon, not copper damage impulse. Two chevrons travel in
+		# the actual transfer direction, then a small cold-status ripple.
+		canvas.draw_polyline(points,Color(0.13,0.48,0.54,a*0.55),3.0,true)
+		canvas.draw_polyline(points,Color(0.76,0.94,0.90,a*0.82),1.2,true)
+		for j in range(2):
+			var f:float=clampf(u+float(j)*0.18,0.0,1.0)
+			var p:Vector2=from.lerp(to,f)+n*sin(f*PI)*6.0
+			canvas.draw_polyline(PackedVector2Array([p-dir*5.0+n*3.0,p,p-dir*5.0-n*3.0]),Color(0.81,0.99,0.96,a*0.8),1.5,true)
+		_ring(canvas,to,5.0+u*7.0,Color(0.20,0.60,0.64,a*0.68),1.4)
 
 func draw_alert(canvas:CanvasItem,game,origin:Vector2,tile:float,font:Font)->void:
 	if game.phase!="fight":return
