@@ -50,7 +50,7 @@ var explore_button:Button
 var skip_reveal_button:Button
 var loot_reveal:Dictionary={}
 var loot_age:float=2.0
-const LOOT_DURATION=0.85
+const LOOT_DURATION=1.35
 const CHEST=Vector2(1146,90)
 var loot_label:Label
 var scene_backdrops:Array[Texture2D]=[]
@@ -547,7 +547,7 @@ func refresh()->void:
 	if t.is_empty():selected_id=-1;merge_mode=false
 	var planning:bool=game.phase=="build"
 	update_status()
-	label_seed.text="P05 · Seed %d"%seed_value
+	label_seed.text="P06 · Seed %d"%seed_value
 	label_rule.text=Run.NAMES[game.stage].to_upper()
 	label_rule.tooltip_text=["Switch the tidal crossing.","Open second inlet: +6 if leak-free.","Echo reefs amplify your crew."][game.stage]
 	if game.stage==2 and game.wave==1:label_rule.tooltip_text="Boss escape = immediate defeat."
@@ -923,35 +923,69 @@ func draw_ellipse_shadow(anchor:Vector2,radius:float)->void:
 	draw_circle(Vector2.ZERO,radius,Color(0.20,0.28,0.28,0.30))
 	draw_set_transform(Vector2.ZERO)
 
+# Presentation only: relic category and attained rank are real model results, not rarity odds.
+func loot_feedback_tier(result:Dictionary)->int:
+	if result.get("kind","")!="core":return 0
+	return 2 if int(result.get("rank",1))>=2 else 1
+
+func loot_feedback_color(tier:int)->Color:
+	return [Color("55b6b7"),Color("926ac0"),Color("e9b842")][clampi(tier,0,2)]
+
 func draw_loot_presentation()->void:
-	var chest_open=loot_age>=0.18 and loot_age<LOOT_DURATION and not loot_reveal.is_empty()
-	var shake=sin(loot_age*80)*3.0 if loot_age<0.18 else 0.0
+	var active=loot_age<LOOT_DURATION and not loot_reveal.is_empty()
+	var tier=loot_feedback_tier(loot_reveal)
+	var glow=loot_feedback_color(tier)
+	var chest_open=active and loot_age>=0.32
+	var charge=clampf(loot_age/0.32,0,1) if active else 0.0
+	var shake=sin(loot_age*82)*3.0*charge if active and not chest_open else 0.0
 	var p=CHEST+Vector2(shake,0)
-	# Brass framed treasure chest, grounded at dock. Reward is credited before this cosmetic motion.
 	draw_ellipse_shadow(p+Vector2(0,65),67)
+	if active and not chest_open:
+		draw_arc(p+Vector2(0,5),52,0,TAU*charge,48,Color(glow,0.75),3,true)
+		draw_circle(p+Vector2(0,5),42,Color(glow,0.12*charge))
 	var tex:Texture2D=chest_textures[int(chest_open)] if chest_textures.size()==2 else null
 	if tex!=null:
 		draw_texture_rect(tex,Rect2(p-Vector2(80,80),Vector2(160,160)),false)
 	else:
 		draw_chest_fallback(p,chest_open)
-	if loot_reveal.is_empty() or loot_age<0.18 or loot_age>=LOOT_DURATION:return
-	var flash=maxf(0,1-(loot_age-0.18)/0.3)
-	draw_circle(p-Vector2(0,18),69*flash,Color(0.78,0.93,0.8,0.28*flash))
-	var progress=clampf((loot_age-0.3)/0.55,0,1)
+	if not chest_open:return
+	var elapsed=loot_age-0.32
+	var burst=clampf(1.0-elapsed/0.55,0,1)
+	var center=p+Vector2(-22,10)
+	# A bounded radial splash, no full-screen flash or shake. Deterministic visual phase.
+	if burst>0:
+		draw_circle(center,30+38*(1-burst),Color(glow,0.28*burst))
+		draw_arc(center,18+50*(1-burst),0,TAU,48,Color(glow,0.75*burst),2.0+float(tier),true)
+		for i in range(9+tier*5):
+			var angle=TAU*float(i)/float(9+tier*5)+0.17
+			var d=Vector2.from_angle(angle)
+			var spark=center+d*(12+48*(1-burst))
+			draw_line(spark,spark+d*(5+5*burst),Color(glow,burst),2,true)
+	var progress=clampf((loot_age-0.87)/0.48,0,1)
 	var target=Vector2(640,750)
+	var icon:Texture2D=null
 	if loot_reveal.kind=="core":
 		for i in range(Run.UPGRADES.size()):
-			if Run.UPGRADES[i].id==loot_reveal.id:target=core_buttons[i].get_global_rect().get_center()
+			if Run.UPGRADES[i].id==loot_reveal.id:
+				target=core_buttons[i].get_global_rect().get_center()
+				if i<relic_icons.size():icon=relic_icons[i]
 	else:
 		for i in range(game.reserve.size()):
 			if game.reserve[i].id==loot_reveal.id:target=reserve_buttons[i].get_global_rect().get_center()
-	var from=p+Vector2(-58,38-10*sin(clampf((loot_age-0.18)/0.2,0,1)*PI/2))
+		var kind=int(loot_reveal.tower_kind)
+		if kind<crew_icons.size():icon=crew_icons[kind]
+	var rise=clampf(elapsed/0.22,0,1)
+	var from=center+Vector2(-42,-36*sin(rise*PI/2))
 	var point=from.lerp(target,progress*progress*(3-2*progress))
-	if loot_reveal.kind=="tower":
-		draw_character(CREW_SPRITES[int(loot_reveal.tower_kind)],"idle",point,character_scale(CREW_SPRITES[int(loot_reveal.tower_kind)])*(0.82-0.42*progress),loot_age)
-	else:
-		draw_colored_polygon(PackedVector2Array([point+Vector2(0,-22),point+Vector2(16,0),point+Vector2(0,22),point+Vector2(-16,0)]),AMP)
-		draw_arc(point,24,0,TAU,48,Color(AMP,0.7),2,true)
+	var size=lerpf(58.0+float(tier)*8.0,28.0,progress)*lerpf(0.65,1.0,rise)
+	var radius=size*0.58
+	draw_circle(point,radius,Color("fff6e4"))
+	draw_arc(point,radius,0,TAU,48,glow,2.5+float(tier),true)
+	if icon!=null:
+		draw_texture_rect(icon,Rect2(point-Vector2.ONE*size/2.0,Vector2.ONE*size),false)
+	if tier>=1 and progress==0.0:
+		var label="RELIC UPGRADED" if tier==2 else "RELIC FOUND"
+		draw_string(font,Vector2(1030,153),label,HORIZONTAL_ALIGNMENT_CENTER,166,12,Color("62456c") if tier==1 else RESOURCE)
 
 func draw_chest_fallback(p:Vector2,chest_open:bool)->void:
 	draw_rect(Rect2(p+Vector2(-42,-3),Vector2(84,35)),Color("96614a"))
