@@ -1,0 +1,18 @@
+{
+  "old_size": [
+    1024,
+    1337
+  ],
+  "new_size": [
+    1344,
+    484
+  ],
+  "old_frames": 64,
+  "unique_padded_images": 32,
+  "pixel_exact_reconstructed": 64,
+  "old_rgba_bytes": 5476352,
+  "new_rgba_bytes": 2601984,
+  "old_png": 1193662,
+  "new_png": 639695,
+  "padded_utilization": 0.9440119539551358
+}
