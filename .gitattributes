@@ -17,11 +17,6 @@
 *.glb filter=lfs diff=lfs merge=lfs -text
 # Existing P04 ordinary blobs are intentionally exempt until a verified LFS migration.
 # No history rewrite; remove an individual exemption only after its LFS object is uploaded.
-/assets/characters/atlas.png -filter -diff -merge -text
-/assets/characters/concept-lineup.png -filter -diff -merge -text
-/assets/environment/tidecross_background.png -filter -diff -merge -text
-/assets/items/chest_closed.png -filter -diff -merge -text
-/assets/items/chest_open.png -filter -diff -merge -text
 /docs/art-sources/chest-pair-original-with-haze.png -filter -diff -merge -text
 /docs/art-sources/chest-pair.png -filter -diff -merge -text
 /docs/art-sources/concept-seven.png -filter -diff -merge -text
@@ -29,4 +24,3 @@
 /docs/art-sources/enemy-damage.png -filter -diff -merge -text
 /docs/art-sources/enemy-walk-original-with-guide.png -filter -diff -merge -text
 /docs/art-sources/enemy-walk.png -filter -diff -merge -text
-/docs/character-motion-preview.gif -filter -diff -merge -text
